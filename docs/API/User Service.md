@@ -7,7 +7,8 @@
 ## 1. 用户与认证 API 文档 (User Service)
 **基础路径:** `/v1/auth`, `/v1/users`  
 **鉴权机制:** 基于 JWT 的长/短 Token 机制 (Access Token 用于业务请求，Refresh Token 用于刷新 Access Token)。  
-**认证约定:** 所有需要认证的接口，均需在 HTTP Header 中携带 `Authorization: Bearer <Access Token>`。
+**认证约定:** 所有需要认证的接口，均需在 HTTP Header 中携带 `Authorization: Bearer <Access Token>`。  
+**用户身份识别:** 用户ID将从JWT Token中解析，无需在请求体或查询参数中传递。
 
 | ID | 功能模块 | 接口路径 | 方法 | 描述 | 鉴权要求 | 依赖 PRD |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -97,7 +98,6 @@
 
 ```json
 {
-  "user_id": 12345,
   "current_points": 50,    // 当前可用点数
   "total_consumed": 150    // 历史总消耗点数
 }
@@ -106,4 +106,3 @@
 ---
 
 **User & Auth API** 设计已完成。我们可以继续设计下一个模块：**Creation & Management API**。
-
