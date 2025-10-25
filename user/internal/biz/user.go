@@ -2,11 +2,35 @@ package biz
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"github.com/go-kratos/kratos/v2/log"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"math/big"
 	"time"
 )
+
+var (
+	// ErrInvalidCredentials 当提供的凭证无效时返回
+	ErrInvalidCredentials = errors.New("invalid credentials")
+
+	// ErrEmailAlreadyExists 当邮箱已被注册时返回
+	ErrEmailAlreadyExists = errors.New("email already exists")
+
+	// ErrInvalidVerificationCode 当验证码无效时返回
+	ErrInvalidVerificationCode = errors.New("invalid verification code")
+
+	// ErrVerificationCodeExpired 当验证码过期时返回
+	ErrVerificationCodeExpired = errors.New("verification code expired")
+)
+
+// VerificationCode 验证码实体，用于存储和验证用户注册验证码
+type VerificationCode struct {
+	Email     string
+	Code      string
+	ExpiresAt time.Time
+}
 
 // User 用户基本信息表
 type User struct {
@@ -53,6 +77,7 @@ type CodeRepository interface {
 type UserUsecase struct {
 	userRepo UserRepository
 	codeRepo CodeRepository
+	authRepo AuthRepository
 	log      *log.Helper
 }
 
@@ -176,4 +201,99 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 
 	uc.log.Log(log.LevelInfo, "Successfully registered user with id: ", user.ID, ", email: ", email)
 	return user, nil
+}
+
+// Login 用户登录
+func (uc *UserUsecase) Login(ctx context.Context, email, password string) (*TokenPair, error) {
+	uc.log.Log(log.LevelInfo, "User login attempt with email: ", email)
+
+	// 参数验证
+	if email == "" || password == "" {
+		uc.log.Log(log.LevelWarn, "Missing email or password for login")
+		return nil, errors.New("email and password are required")
+	}
+
+	// 获取用户
+	user, err := uc.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			uc.log.Log(log.LevelWarn, "User not found with email: ", email)
+			return nil, ErrInvalidCredentials // 为了安全，不暴露用户是否存在
+		}
+		uc.log.Log(log.LevelError, "Database error when getting user with email: ", email, ", error: ", err)
+		return nil, err
+	}
+
+	// 验证密码
+	if !checkPasswordHash(password, user.PasswordHash) {
+		uc.log.Log(log.LevelWarn, "Invalid password for user with email: ", email)
+		return nil, ErrInvalidCredentials
+	}
+
+	// 生成令牌
+	accessToken, accessExpiresIn, err := generateAccessToken(user.ID)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to generate access token for user id: ", user.ID, ", error: ", err)
+		return nil, err
+	}
+
+	refreshToken, refreshExpiresIn, err := generateRefreshToken(user.ID)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to generate refresh token for user id: ", user.ID, ", error: ", err)
+		return nil, err
+	}
+
+	// 存储刷新令牌
+	refreshTokenExpiresAt := time.Now().Add(time.Duration(refreshExpiresIn) * time.Second)
+
+	err = uc.authRepo.StoreRefreshToken(ctx, user.ID, refreshToken, refreshTokenExpiresAt)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to store refresh token for user id: ", user.ID, ", error: ", err)
+		return nil, err
+	}
+
+	uc.log.Log(log.LevelInfo, "User login successful for user id: ", user.ID, ", email: ", email)
+	return &TokenPair{
+		AccessToken:      accessToken,
+		AccessExpiresIn:  accessExpiresIn,
+		RefreshToken:     refreshToken,
+		RefreshExpiresIn: refreshExpiresIn,
+	}, nil
+}
+
+// generateVerificationCode 生成6位数字验证码
+func generateVerificationCode() string {
+	// 生成真正的数字验证码
+	code := make([]byte, 6)
+	for i := range code {
+		n, _ := rand.Int(rand.Reader, big.NewInt(10))
+		code[i] = byte(n.Int64()) + '0'
+	}
+	return string(code)
+}
+
+// hashPassword 使用bcrypt对密码进行哈希处理
+//
+// 参数:
+//   - password: 明文密码
+//
+// 返回值:
+//   - string: 哈希后的密码
+//   - error: 错误信息
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+// checkPasswordHash 验证密码是否与哈希值匹配
+//
+// 参数:
+//   - password: 明文密码
+//   - hash: 哈希后的密码
+//
+// 返回值:
+//   - bool: 密码是否匹配
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
