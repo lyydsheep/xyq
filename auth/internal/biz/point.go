@@ -24,5 +24,4 @@ func (UserPoint) TableName() string {
 type UserPointRepository interface {
 	Create(ctx context.Context, userPoint *UserPoint) error
 	GetByUserID(ctx context.Context, userID int64) (*UserPoint, error)
-	Update(ctx context.Context, userPoint *UserPoint) error
 }
