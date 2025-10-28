@@ -88,9 +88,14 @@ type UserUsecase struct {
 	log      *log.Helper
 }
 
-// NewGreeterUsecase new a Greeter usecase.
-func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, logger log.Logger) *UserUsecase {
-	return &UserUsecase{userRepo: userRepo, codeRepo: codeRepo, log: log.NewHelper(logger)}
+// NewUserUsecase new a User usecase.
+func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, authRepo AuthRepository, logger log.Logger) *UserUsecase {
+	return &UserUsecase{
+		userRepo: userRepo,
+		codeRepo: codeRepo,
+		authRepo: authRepo,
+		log:      log.NewHelper(logger),
+	}
 }
 
 // SendRegisterCode 发送注册验证码
@@ -163,11 +168,10 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 		return nil, ErrVerificationCodeExpired
 	}
 
-	// 删除验证码
-	err = uc.codeRepo.DeleteVerificationCode(ctx, email)
-	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to delete verification code for email: ", email, ", error: ", err)
-		// 不返回错误，因为用户已经通过验证
+	// 密码强度验证
+	if len(password) < 6 {
+		uc.log.Log(log.LevelWarn, "Password too short for email: ", email)
+		return nil, errors.New("password must be at least 6 characters long")
 	}
 
 	// 检查邮箱是否已注册
@@ -180,10 +184,11 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 		return nil, err
 	}
 
-	// 密码强度验证
-	if len(password) < 6 {
-		uc.log.Log(log.LevelWarn, "Password too short for email: ", email)
-		return nil, errors.New("password must be at least 6 characters long")
+	// 删除验证码
+	err = uc.codeRepo.DeleteVerificationCode(ctx, email)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to delete verification code for email: ", email, ", error: ", err)
+		// 不返回错误，因为用户已经通过验证
 	}
 
 	// 密码哈希
@@ -320,6 +325,13 @@ func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code st
 		return errors.New("SENDGRID_API_KEY environment variable is required")
 	}
 
+	// 检查是否为测试环境（API key以"test-"开头）
+	isTestMode := strings.HasPrefix(apiKey, "test-")
+	if isTestMode {
+		uc.log.Log(log.LevelInfo, "Test mode: skipping actual email send, email: ", email, ", code: ", code)
+		return nil
+	}
+
 	// 2. 定义发件人邮箱（需要是在 SendGrid 中验证过的域名下的邮箱）
 	fromEmail := mail.NewEmail("用户系统", "noreply@lyydsheep.xyz")
 
@@ -442,4 +454,25 @@ func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code st
 		uc.log.Log(log.LevelError, "Failed to send email, status: ", response.StatusCode, ", body: ", response.Body)
 		return fmt.Errorf("failed to send verification email: status %d", response.StatusCode)
 	}
+}
+
+// UpdateUser 更新用户信息
+func (uc *UserUsecase) UpdateUser(ctx context.Context, id int64, req *UpdateUserRequest) error {
+	uc.log.Log(log.LevelInfo, "Updating user with id: ", id)
+
+	// 参数验证
+	if req == nil {
+		uc.log.Log(log.LevelWarn, "UpdateUser request is nil")
+		return errors.New("update request is required")
+	}
+
+	// 更新用户信息
+	err := uc.userRepo.Update(ctx, id, req)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to update user with id: ", id, ", error: ", err)
+		return err
+	}
+
+	uc.log.Log(log.LevelInfo, "Successfully updated user with id: ", id)
+	return nil
 }
