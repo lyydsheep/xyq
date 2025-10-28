@@ -4,11 +4,18 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"math/big"
 	"time"
+
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 var (
@@ -117,9 +124,15 @@ func (uc *UserUsecase) SendRegisterCode(ctx context.Context, email string) error
 		return err
 	}
 
-	// 这里应该发送邮件，暂时只记录日志
-	uc.log.Log(log.LevelInfo, "Verification code for email ", email, ": ", code)
+	// 发送邮件验证码
+	err = uc.sendVerificationEmail(ctx, email, code)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to send verification email to: ", email, ", error: ", err)
+		// 即使邮件发送失败，也不删除验证码，用户可能需要重新发送
+		return fmt.Errorf("failed to send verification email: %w", err)
+	}
 
+	uc.log.Log(log.LevelInfo, "Verification code sent successfully to: ", email)
 	return nil
 }
 
@@ -296,4 +309,137 @@ func hashPassword(password string) (string, error) {
 func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+// sendVerificationEmail 发送验证码邮件
+func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code string) error {
+	// 1. 从环境变量获取 API Key
+	apiKey := os.Getenv("SENDGRID_API_KEY")
+	if apiKey == "" {
+		uc.log.Log(log.LevelError, "SENDGRID_API_KEY environment variable is not set")
+		return errors.New("SENDGRID_API_KEY environment variable is required")
+	}
+
+	// 2. 定义发件人邮箱（需要是在 SendGrid 中验证过的域名下的邮箱）
+	fromEmail := mail.NewEmail("用户系统", "noreply@lyydsheep.xyz")
+
+	// 3. 提取邮箱的用户名部分作为收件人称呼
+	emailPrefix := strings.Split(email, "@")[0]
+	if len(emailPrefix) > 3 {
+		// 只显示邮箱前缀的前3个字符和后缀（例如：use***@example.com）
+		emailPrefix = emailPrefix[:3] + strings.Repeat("*", len(emailPrefix)-3)
+	}
+
+	// 4. 定义收件人
+	toEmail := mail.NewEmail(emailPrefix, email)
+
+	// 5. 定义邮件主题
+	subject := "您的验证码 - 请在10分钟内使用"
+
+	// 6. 构建纯文本内容
+	plainTextContent := fmt.Sprintf(`您好！
+
+您的注册验证码是：%s
+
+此验证码将在10分钟后失效。为了保障您的账户安全，请勿将验证码告知他人。
+
+如果您没有进行注册操作，请忽略此邮件。
+
+感谢您的使用！
+`, code)
+
+	// 7. 构建HTML内容
+	htmlContent := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱验证</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); padding: 40px 30px; text-align: center; color: white; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; font-weight: 600; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .content { padding: 40px 30px; }
+        .greeting { font-size: 16px; color: #333; margin-bottom: 25px; line-height: 1.6; }
+        .code-box { background: linear-gradient(135deg, #f093fb 0%%, #f5576c 100%%); border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3); }
+        .code-label { font-size: 14px; color: white; margin-bottom: 10px; opacity: 0.9; }
+        .code { font-size: 36px; font-weight: bold; color: white; letter-spacing: 8px; font-family: 'Courier New', monospace; }
+        .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 4px; }
+        .warning-title { color: #856404; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+        .warning-text { color: #856404; font-size: 13px; line-height: 1.6; }
+        .footer { background-color: #f8f9fa; padding: 25px 30px; text-align: center; color: #666; font-size: 13px; line-height: 1.6; }
+        .footer a { color: #667eea; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 邮箱验证码</h1>
+            <p>您的安全验证信息</p>
+        </div>
+
+        <div class="content">
+            <div class="greeting">
+                您好！<br>
+                感谢您注册我们的服务。请使用下面的验证码完成注册：
+            </div>
+
+            <div class="code-box">
+                <div class="code-label">您的验证码</div>
+                <div class="code">%s</div>
+            </div>
+
+            <div class="warning">
+                <div class="warning-title">⏰ 重要提醒</div>
+                <div class="warning-text">
+                    • 验证码将在 <strong>10 分钟</strong> 后失效<br>
+                    • 请勿将验证码告知他人<br>
+                    • 如果您没有进行注册操作，请忽略此邮件
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>此邮件由系统自动发送，请勿直接回复。</p>
+            <p>如有问题请联系 <a href="mailto:support@lyydsheep.xyz">support@lyydsheep.xyz</a></p>
+            <p style="margin-top: 15px; color: #999;">© 2025 您的应用名称. 保留所有权利。</p>
+        </div>
+    </div>
+</body>
+</html>
+`, code)
+
+	// 8. 构造完整的邮件对象
+	message := mail.NewSingleEmail(
+		fromEmail,
+		subject,
+		toEmail,
+		plainTextContent,
+		htmlContent,
+	)
+
+	// 9. 创建 SendGrid 客户端
+	client := sendgrid.NewSendClient(apiKey)
+
+	// 10. 发送邮件
+	uc.log.Log(log.LevelInfo, "Sending verification email to: ", email)
+	response, err := client.Send(message)
+
+	// 11. 处理响应和错误
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to send email: ", err)
+		return fmt.Errorf("failed to send verification email: %w", err)
+	}
+
+	if response.StatusCode >= 200 && response.StatusCode < 300 {
+		uc.log.Log(log.LevelInfo, "Verification email sent successfully to: ", email, ", status: ", response.StatusCode)
+		return nil
+	} else {
+		uc.log.Log(log.LevelError, "Failed to send email, status: ", response.StatusCode, ", body: ", response.Body)
+		return fmt.Errorf("failed to send verification email: status %d", response.StatusCode)
+	}
 }

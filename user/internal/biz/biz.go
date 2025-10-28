@@ -1,7 +1,6 @@
 package biz
 
 import (
-	biz2 "edge/internal/biz"
 	"github.com/google/wire"
 )
 
@@ -9,5 +8,4 @@ import (
 var ProviderSet = wire.NewSet(
 	NewGreeterUsecase,
 	NewUserUsecase,
-	biz2.NewAuthUsecase,
 )
