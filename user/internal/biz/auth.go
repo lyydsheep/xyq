@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -67,6 +68,12 @@ func generateAccessToken(userID int64) (string, int32, error) {
 	expiresIn := int32(3600)
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 
+	// 从环境变量获取JWT访问令牌密钥
+	secret := os.Getenv("JWT_ACCESS_SECRET")
+	if secret == "" {
+		return "", 0, errors.New("JWT_ACCESS_SECRET environment variable is required")
+	}
+
 	// 创建声明
 	claims := &jwt.RegisteredClaims{
 		Subject:   fmt.Sprintf("%d", userID),
@@ -79,9 +86,7 @@ func generateAccessToken(userID int64) (string, int32, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// 签名并获得完整的编码后的字符串token
-	// 注意：在生产环境中，应该使用环境变量或配置文件来存储密钥
-	// TODO 补充密钥
-	tokenString, err := token.SignedString([]byte("your-secret-key"))
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", 0, err
 	}
@@ -94,6 +99,12 @@ func generateRefreshToken(userID int64) (string, int32, error) {
 	// 设置过期时间为7天
 	expiresIn := int32(7 * 24 * 3600)
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
+
+	// 从环境变量获取JWT刷新令牌密钥
+	secret := os.Getenv("JWT_REFRESH_SECRET")
+	if secret == "" {
+		return "", 0, errors.New("JWT_REFRESH_SECRET environment variable is required")
+	}
 
 	// 创建声明
 	claims := &jwt.RegisteredClaims{
@@ -108,8 +119,7 @@ func generateRefreshToken(userID int64) (string, int32, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// 签名并获得完整的编码后的字符串token
-	// 注意：在生产环境中，应该使用环境变量或配置文件来存储密钥
-	tokenString, err := token.SignedString([]byte("your-refresh-secret-key"))
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", 0, err
 	}
@@ -199,9 +209,16 @@ func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (i
 		return 0, ErrInvalidToken
 	}
 
+	// 从环境变量获取JWT访问令牌密钥
+	secret := os.Getenv("JWT_ACCESS_SECRET")
+	if secret == "" {
+		uc.log.Log(log.LevelError, "JWT_ACCESS_SECRET environment variable is required")
+		return 0, errors.New("JWT_ACCESS_SECRET environment variable is required")
+	}
+
 	// 解析和验证JWT令牌
 	token, err := jwt.ParseWithClaims(accessToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte("your-secret-key"), nil
+		return []byte(secret), nil
 	})
 
 	if err != nil {

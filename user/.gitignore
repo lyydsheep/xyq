@@ -32,6 +32,12 @@ Thumbs.db
 *.log
 bin/
 
+# Environment variables and configuration files
+# 敏感配置文件，包含数据库密码、JWT密钥等
+.env
+.env.local
+.env.*.local
+
 # Develop tools
 .vscode/
 .idea/

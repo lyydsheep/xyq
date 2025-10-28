@@ -2,6 +2,9 @@ package data
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
 	"user/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -29,9 +32,16 @@ type Data struct {
 
 // NewData .
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
+	// 从环境变量获取Redis密码，优先级最高
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" && c.Redis.Password != "" {
+		redisPassword = c.Redis.Password
+	}
+
 	// 初始化Redis客户端
 	rds := redis.NewClient(&redis.Options{
-		Addr: c.Redis.Addr,
+		Addr:     c.Redis.Addr,
+		Password: redisPassword,
 	})
 
 	// 测试Redis连接
@@ -41,8 +51,28 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 		return nil, nil, err
 	}
 
+	// 从环境变量获取数据库密码，优先级最高
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" && c.Database.Password != "" {
+		dbPassword = c.Database.Password
+	}
+
+	// 检查密码是否配置
+	if dbPassword == "" {
+		return nil, nil, errors.New("database password is required, set DB_PASSWORD environment variable or database.password config")
+	}
+
+	// 使用拆分的配置组件构建DSN
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local",
+		c.Database.Username,
+		dbPassword,
+		c.Database.Host,
+		c.Database.Port,
+		c.Database.Database,
+	)
+
 	// 初始化MySQL数据库连接
-	db, err := gorm.Open(mysql.Open(c.Database.Source), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.NewHelper(logger).Errorf("Failed to connect to MySQL: %v", err)
 		return nil, nil, err
