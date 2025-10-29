@@ -32,6 +32,18 @@ var (
 	ErrVerificationCodeExpired = errors.New("verification code expired")
 )
 
+// isUniqueConstraintError 判断错误是否为唯一约束错误（邮箱已存在）
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// GORM 的唯一约束错误信息通常包含 "UNIQUE constraint failed" 或 "Duplicate entry"
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "duplicate") ||
+		strings.Contains(errStr, "unique") ||
+		strings.Contains(errStr, "constraint failed")
+}
+
 // VerificationCode 验证码实体，用于存储和验证用户注册验证码
 type VerificationCode struct {
 	Email     string
@@ -78,6 +90,8 @@ type CodeRepository interface {
 	StoreVerificationCode(ctx context.Context, email, code string, expiresAt time.Time) error
 	GetVerificationCode(ctx context.Context, email string) (*VerificationCode, error)
 	DeleteVerificationCode(ctx context.Context, email string) error
+	// 发送频率限制
+	CheckAndSetSendRateLimit(ctx context.Context, email string, duration time.Duration) (bool, error)
 }
 
 // GreeterUsecase is a Greeter usecase.
@@ -98,6 +112,9 @@ func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, authRepo A
 	}
 }
 
+// ErrTooManyRequests 发送请求过于频繁
+var ErrTooManyRequests = errors.New("too many requests, please try again later")
+
 // SendRegisterCode 发送注册验证码
 func (uc *UserUsecase) SendRegisterCode(ctx context.Context, email string) error {
 	uc.log.Log(log.LevelInfo, "Sending registration code to email: ", email)
@@ -116,6 +133,18 @@ func (uc *UserUsecase) SendRegisterCode(ctx context.Context, email string) error
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		uc.log.Log(log.LevelError, "Database error when checking email: ", email, ", error: ", err)
 		return err
+	}
+
+	// 检查发送频率限制（60秒内只能发送一次）
+	// 这可以防止并发请求重复发送验证码
+	ok, err := uc.codeRepo.CheckAndSetSendRateLimit(ctx, email, 60*time.Second)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to check rate limit for email: ", email, ", error: ", err)
+		return err
+	}
+	if !ok {
+		uc.log.Log(log.LevelWarn, "Send verification code too frequently for email: ", email)
+		return ErrTooManyRequests
 	}
 
 	// 生成验证码
@@ -174,16 +203,6 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 		return nil, errors.New("password must be at least 6 characters long")
 	}
 
-	// 检查邮箱是否已注册
-	_, err = uc.userRepo.GetByEmail(ctx, email)
-	if err == nil {
-		uc.log.Log(log.LevelInfo, "Email already registered during registration: ", email)
-		return nil, ErrEmailAlreadyExists
-	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		uc.log.Log(log.LevelError, "Database error when checking email during registration: ", email, ", error: ", err)
-		return nil, err
-	}
-
 	// 删除验证码
 	err = uc.codeRepo.DeleteVerificationCode(ctx, email)
 	if err != nil {
@@ -199,6 +218,9 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 	}
 
 	// 创建用户
+	// 注意：这里不提前检查邮箱是否已存在，而是直接尝试创建
+	// 如果邮箱已存在，数据库的唯一约束会阻止插入并返回错误
+	// 这种方式避免了竞态条件问题
 	user := &User{
 		Email:        email,
 		PasswordHash: hashedPassword,
@@ -210,6 +232,11 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 
 	err = uc.userRepo.Create(ctx, user)
 	if err != nil {
+		// 检查是否是唯一约束错误（邮箱已存在）
+		if isUniqueConstraintError(err) {
+			uc.log.Log(log.LevelInfo, "Email already registered during registration: ", email)
+			return nil, ErrEmailAlreadyExists
+		}
 		uc.log.Log(log.LevelError, "Failed to create user with email: ", email, ", error: ", err)
 		return nil, err
 	}

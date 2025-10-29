@@ -106,3 +106,23 @@ func (r *codeRepository) DeleteVerificationCode(ctx context.Context, email strin
 	r.logger.Log(log.LevelInfo, "Successfully deleted verification code for email: ", email)
 	return nil
 }
+
+// CheckAndSetSendRateLimit 检查并设置发送频率限制
+// 如果在指定时间内已经发送过验证码，返回 false；否则设置限制并返回 true
+func (r *codeRepository) CheckAndSetSendRateLimit(ctx context.Context, email string, duration time.Duration) (bool, error) {
+	r.logger.Log(log.LevelInfo, "Checking send rate limit for email: ", email)
+
+	// 构造Redis键
+	key := fmt.Sprintf("rate_limit:send_code:%s", email)
+
+	// 使用 SETNX 命令：仅当键不存在时才设置
+	// 这确保了在指定时间内只能发送一次验证码
+	err := r.data.RedisClient().Set(ctx, key, time.Now().Unix(), duration).Err()
+	if err != nil {
+		r.logger.Log(log.LevelError, "Failed to set rate limit for email: ", email, ", error: ", err)
+		return false, err
+	}
+
+	r.logger.Log(log.LevelInfo, "Rate limit set successfully for email: ", email)
+	return true, nil
+}

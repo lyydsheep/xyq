@@ -60,6 +60,11 @@ func (m *MockCodeRepository) DeleteVerificationCode(ctx context.Context, email s
 	return args.Error(0)
 }
 
+func (m *MockCodeRepository) CheckAndSetSendRateLimit(ctx context.Context, email string, duration time.Duration) (bool, error) {
+	args := m.Called(ctx, email, duration)
+	return args.Bool(0), args.Error(1)
+}
+
 // 模拟 AuthRepository
 type MockAuthRepository struct {
 	mock.Mock
@@ -129,11 +134,30 @@ func TestUserUsecase_SendRegisterCode(t *testing.T) {
 				userRepo.On("GetByEmail", mock.Anything, "test@example.com").
 					Return((*User)(nil), gorm.ErrRecordNotFound)
 
+				// 频率限制检查通过
+				codeRepo.On("CheckAndSetSendRateLimit", mock.Anything, "test@example.com", 60*time.Second).
+					Return(true, nil)
+
 				// 存储验证码
 				codeRepo.On("StoreVerificationCode", mock.Anything, "test@example.com", mock.Anything, mock.Anything).
 					Return(nil)
 			},
 			wantErr: false,
+		},
+		{
+			name:  "发送过于频繁",
+			email: "frequent@example.com",
+			setupMocks: func(userRepo *MockUserRepository, codeRepo *MockCodeRepository) {
+				// 用户不存在
+				userRepo.On("GetByEmail", mock.Anything, "frequent@example.com").
+					Return((*User)(nil), gorm.ErrRecordNotFound)
+
+				// 频率限制检查失败
+				codeRepo.On("CheckAndSetSendRateLimit", mock.Anything, "frequent@example.com", 60*time.Second).
+					Return(false, nil)
+			},
+			wantErr:     true,
+			expectedErr: ErrTooManyRequests,
 		},
 		{
 			name:  "邮箱为空",
@@ -166,14 +190,14 @@ func TestUserUsecase_SendRegisterCode(t *testing.T) {
 			expectedErr: errors.New("database error"),
 		},
 		{
-			name:  "存储验证码失败",
-			email: "store-error@example.com",
+			name:  "频率限制错误",
+			email: "rate-limit-error@example.com",
 			setupMocks: func(userRepo *MockUserRepository, codeRepo *MockCodeRepository) {
-				userRepo.On("GetByEmail", mock.Anything, "store-error@example.com").
+				userRepo.On("GetByEmail", mock.Anything, "rate-limit-error@example.com").
 					Return((*User)(nil), gorm.ErrRecordNotFound)
 
-				codeRepo.On("StoreVerificationCode", mock.Anything, "store-error@example.com", mock.Anything, mock.Anything).
-					Return(errors.New("redis error"))
+				codeRepo.On("CheckAndSetSendRateLimit", mock.Anything, "rate-limit-error@example.com", 60*time.Second).
+					Return(false, errors.New("redis error"))
 			},
 			wantErr:     true,
 			expectedErr: errors.New("redis error"),
@@ -251,10 +275,6 @@ func TestUserUsecase_Register(t *testing.T) {
 				codeRepo.On("DeleteVerificationCode", mock.Anything, "test@example.com").
 					Return(nil)
 
-				// 用户不存在
-				userRepo.On("GetByEmail", mock.Anything, "test@example.com").
-					Return((*User)(nil), gorm.ErrRecordNotFound)
-
 				// 创建用户
 				userRepo.On("Create", mock.Anything, mock.MatchedBy(func(user *User) bool {
 					return user.Email == "test@example.com" && user.Nickname == "测试用户"
@@ -304,24 +324,6 @@ func TestUserUsecase_Register(t *testing.T) {
 			expectedErr: ErrVerificationCodeExpired,
 		},
 		{
-			name:     "邮箱已存在",
-			email:    "existing@example.com",
-			password: "password123",
-			code:     "123456",
-			nickname: "测试用户",
-			setupMocks: func(userRepo *MockUserRepository, codeRepo *MockCodeRepository, authRepo *MockAuthRepository) {
-				codeRepo.On("GetVerificationCode", mock.Anything, "existing@example.com").
-					Return(validCode, nil)
-
-				// 注意：验证码在检查邮箱存在之后才删除，所以这里不需要期望DeleteVerificationCode
-
-				userRepo.On("GetByEmail", mock.Anything, "existing@example.com").
-					Return(&User{Email: "existing@example.com"}, nil)
-			},
-			wantErr:     true,
-			expectedErr: ErrEmailAlreadyExists,
-		},
-		{
 			name:     "密码太短",
 			email:    "test@example.com",
 			password: "123",
@@ -333,6 +335,26 @@ func TestUserUsecase_Register(t *testing.T) {
 			},
 			wantErr:     true,
 			expectedErr: errors.New("password must be at least 6 characters long"),
+		},
+		{
+			name:     "邮箱已存在（唯一约束错误）",
+			email:    "existing@example.com",
+			password: "password123",
+			code:     "123456",
+			nickname: "测试用户",
+			setupMocks: func(userRepo *MockUserRepository, codeRepo *MockCodeRepository, authRepo *MockAuthRepository) {
+				codeRepo.On("GetVerificationCode", mock.Anything, "existing@example.com").
+					Return(validCode, nil)
+
+				codeRepo.On("DeleteVerificationCode", mock.Anything, "existing@example.com").
+					Return(nil)
+
+				// 模拟唯一约束错误（邮箱已存在）
+				userRepo.On("Create", mock.Anything, mock.Anything).
+					Return(errors.New("Duplicate entry 'existing@example.com' for key 'email'"))
+			},
+			wantErr:     true,
+			expectedErr: ErrEmailAlreadyExists,
 		},
 	}
 
@@ -711,6 +733,132 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 
 			// 验证所有期望都被调用
 			userRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// TestUserUsecase_Register_Concurrent 测试 Register 函数的并发安全性
+func TestUserUsecase_Register_Concurrent(t *testing.T) {
+	setupTestEnv()
+	defer cleanupTestEnv()
+
+	// 这个测试验证在并发情况下，只有一个请求能成功创建用户
+	// 其他请求会返回 ErrEmailAlreadyExists
+	t.Run("并发注册同一邮箱", func(t *testing.T) {
+		const numGoroutines = 10
+		email := "concurrent-test@example.com"
+		password := "password123"
+		code := "123456"
+		nickname := "测试用户"
+
+		userRepo := new(MockUserRepository)
+		codeRepo := new(MockCodeRepository)
+		authRepo := new(MockAuthRepository)
+
+		validCode := &VerificationCode{
+			Email:     email,
+			Code:      code,
+			ExpiresAt: time.Now().Add(10 * time.Minute),
+		}
+
+		// 设置期望：第一个成功的请求，其他请求返回唯一约束错误
+		codeRepo.On("GetVerificationCode", mock.Anything, email).
+			Return(validCode, nil).Times(numGoroutines)
+
+		codeRepo.On("DeleteVerificationCode", mock.Anything, email).
+			Return(nil).Times(numGoroutines)
+
+		// 模拟第一个请求成功，其他请求失败
+		userRepo.On("Create", mock.Anything, mock.Anything).
+			Run(func(args mock.Arguments) {
+				// 第一次调用返回成功
+				userRepo.On("Create", mock.Anything, mock.Anything).
+					Return(errors.New("Duplicate entry '" + email + "' for key 'email'"))
+			}).
+			Return(nil).Once()
+
+		uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+
+		// 启动并发请求
+		errChan := make(chan error, numGoroutines)
+		for i := 0; i < numGoroutines; i++ {
+			go func() {
+				_, err := uc.Register(context.Background(), email, password, code, nickname)
+				errChan <- err
+			}()
+		}
+
+		// 收集结果
+		successCount := 0
+		duplicateCount := 0
+		otherErrors := 0
+
+		for i := 0; i < numGoroutines; i++ {
+			err := <-errChan
+			if err == nil {
+				successCount++
+			} else if errors.Is(err, ErrEmailAlreadyExists) {
+				duplicateCount++
+			} else {
+				otherErrors++
+				t.Logf("Unexpected error: %v", err)
+			}
+		}
+
+		// 验证结果：只有一个成功，其他都是邮箱已存在错误
+		assert.Equal(t, 1, successCount, "应该只有一个请求成功创建用户")
+		assert.Equal(t, numGoroutines-1, duplicateCount, "其他请求应该返回邮箱已存在错误")
+		assert.Equal(t, 0, otherErrors, "不应该有其他错误")
+
+		// 验证所有期望都被调用
+		codeRepo.AssertExpectations(t)
+		userRepo.AssertExpectations(t)
+	})
+}
+
+// TestIsUniqueConstraintError 测试唯一约束错误检测
+func TestIsUniqueConstraintError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "nil 错误",
+			err:      nil,
+			expected: false,
+		},
+		{
+			name:     "普通错误",
+			err:      errors.New("some other error"),
+			expected: false,
+		},
+		{
+			name:     "包含 duplicate 的错误",
+			err:      errors.New("Duplicate entry 'test@example.com' for key 'email'"),
+			expected: true,
+		},
+		{
+			name:     "包含 unique 的错误",
+			err:      errors.New("UNIQUE constraint failed: users.email"),
+			expected: true,
+		},
+		{
+			name:     "包含 constraint failed 的错误",
+			err:      errors.New("constraint failed: users.email"),
+			expected: true,
+		},
+		{
+			name:     "大写 DUPLICATE",
+			err:      errors.New("DUPLICATE entry 'test@example.com'"),
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isUniqueConstraintError(tt.err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
