@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "user/api/user/v1;v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+// 用户服务
+service UserService {
+  // 获取当前用户资料
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.http) = {
+      get: "/v1/user/profile"
+    };
+  }
+
+  // 更新当前用户资料
+  rpc UpdateCurrentUser(UpdateCurrentUserRequest) returns (UpdateCurrentUserResponse) {
+    option (google.api.http) = {
+      put: "/v1/user/profile"
+      body: "*"
+    };
+  }
+}
+
+// 获取当前用户请求
+message GetCurrentUserRequest {}
+
+// 获取当前用户响应
+message GetCurrentUserResponse {
+  int64 id = 1;
+  string email = 2;
+  string nickname = 3;
+  string avatar_url = 4;
+  bool is_premium = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// 更新当前用户请求
+message UpdateCurrentUserRequest {
+  string nickname = 1;
+  string avatar_url = 2;
+}
+
+// 更新当前用户响应
+message UpdateCurrentUserResponse {
+  int64 id = 1;
+  string email = 2;
+  string nickname = 3;
+  string avatar_url = 4;
+  bool is_premium = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
