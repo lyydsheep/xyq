@@ -124,7 +124,7 @@ const file_helloworld_v1_greeter_proto_rawDesc = "" +
 	"\amessage\x18\x01 \x01(\tR\amessage2i\n" +
 	"\aGreeter\x12^\n" +
 	"\bSayHello\x12\x1b.helloworld.v1.HelloRequest\x1a\x19.helloworld.v1.HelloReply\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/helloworld/{name}BN\n" +
-	"\x1cdev.kratos.api.helloworld.v1B\x11HelloworldProtoV1P\x01Z\x19auth/api/helloworld/v1;v1b\x06proto3"
+	"\x1cdev.kratos.api.helloworld.v1B\x11HelloworldProtoV1P\x01Z\x19user/api/helloworld/v1;v1b\x06proto3"
 
 var (
 	file_helloworld_v1_greeter_proto_rawDescOnce sync.Once
