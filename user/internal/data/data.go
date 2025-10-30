@@ -17,11 +17,14 @@ import (
 // ProviderSet is data providers.
 var ProviderSet = wire.NewSet(
 	NewData,
+	NewDB,
+	NewRedis,
 	NewGreeterRepo,
 	NewUserRepository,
 	NewUserPointRepository,
 	NewPointTransactionRepository,
 	NewCodeRepository,
+	NewAuthRepository,
 )
 
 // Data .
@@ -112,4 +115,14 @@ func (d *Data) RedisClient() *redis.Client {
 // DB 返回MySQL数据库客户端
 func (d *Data) DB() *gorm.DB {
 	return d.db
+}
+
+// NewDB 返回MySQL数据库连接
+func NewDB(data *Data) *gorm.DB {
+	return data.db
+}
+
+// NewRedis 返回Redis客户端
+func NewRedis(data *Data) *redis.Client {
+	return data.rds
 }
