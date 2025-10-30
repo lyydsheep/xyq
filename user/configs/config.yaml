@@ -9,12 +9,10 @@ data:
   database:
     driver: mysql
     host: 127.0.0.1
-    port: 3306
-    database: test
+    port: 33060
+    database: user_service
     username: root
-    password: ""
   redis:
-    addr: 127.0.0.1:6379
-    password: ""
+    addr: 127.0.0.1:34701
     read_timeout: 0.2s
     write_timeout: 0.2s

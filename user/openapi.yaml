@@ -3,8 +3,7 @@
 
 openapi: 3.0.3
 info:
-    title: Greeter API
-    description: The greeting service definition.
+    title: ""
     version: 0.0.1
 paths:
     /helloworld/{name}:
@@ -26,13 +25,279 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/helloworld.v1.HelloReply'
+    /v1/auth/login:
+        post:
+            tags:
+                - AuthService
+            description: 用户登录
+            operationId: AuthService_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.v1.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.v1.LoginResponse'
+    /v1/auth/logout:
+        post:
+            tags:
+                - AuthService
+            description: 用户登出
+            operationId: AuthService_Logout
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.v1.LogoutRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.v1.LogoutResponse'
+    /v1/auth/refresh:
+        post:
+            tags:
+                - AuthService
+            description: 刷新Access Token
+            operationId: AuthService_RefreshToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.v1.RefreshTokenRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.v1.RefreshTokenResponse'
+    /v1/auth/register:
+        post:
+            tags:
+                - AuthService
+            description: 用户注册
+            operationId: AuthService_Register
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.v1.RegisterRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.v1.RegisterResponse'
+    /v1/auth/send-code:
+        post:
+            tags:
+                - AuthService
+            description: 发送注册邮箱验证码
+            operationId: AuthService_SendRegisterCode
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/auth.v1.SendRegisterCodeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/auth.v1.SendRegisterCodeResponse'
+    /v1/user/profile:
+        get:
+            tags:
+                - UserService
+            description: 获取当前用户资料
+            operationId: UserService_GetCurrentUser
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1.GetCurrentUserResponse'
+        put:
+            tags:
+                - UserService
+            description: 更新当前用户资料
+            operationId: UserService_UpdateCurrentUser
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1.UpdateCurrentUserRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1.UpdateCurrentUserResponse'
 components:
     schemas:
+        auth.v1.LoginRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                password:
+                    type: string
+            description: 登录请求
+        auth.v1.LoginResponse:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                accessExpiresIn:
+                    type: integer
+                    format: int32
+                refreshToken:
+                    type: string
+                refreshExpiresIn:
+                    type: integer
+                    format: int32
+            description: 登录响应
+        auth.v1.LogoutRequest:
+            type: object
+            properties:
+                refreshToken:
+                    type: string
+            description: 登出请求
+        auth.v1.LogoutResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 登出响应
+        auth.v1.RefreshTokenRequest:
+            type: object
+            properties:
+                refreshToken:
+                    type: string
+            description: 刷新Token请求
+        auth.v1.RefreshTokenResponse:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                accessExpiresIn:
+                    type: integer
+                    format: int32
+            description: 刷新Token响应
+        auth.v1.RegisterRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                password:
+                    type: string
+                code:
+                    type: string
+                nickname:
+                    type: string
+            description: 注册请求
+        auth.v1.RegisterResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                email:
+                    type: string
+                nickname:
+                    type: string
+            description: 注册响应
+        auth.v1.SendRegisterCodeRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+            description: 发送注册验证码请求
+        auth.v1.SendRegisterCodeResponse:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+            description: 发送注册验证码响应
         helloworld.v1.HelloReply:
             type: object
             properties:
                 message:
                     type: string
             description: The response message containing the greetings
+        user.v1.GetCurrentUserResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                email:
+                    type: string
+                nickname:
+                    type: string
+                avatarUrl:
+                    type: string
+                isPremium:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+            description: 获取当前用户响应
+        user.v1.UpdateCurrentUserRequest:
+            type: object
+            properties:
+                nickname:
+                    type: string
+                avatarUrl:
+                    type: string
+            description: 更新当前用户请求
+        user.v1.UpdateCurrentUserResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                email:
+                    type: string
+                nickname:
+                    type: string
+                avatarUrl:
+                    type: string
+                isPremium:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+            description: 更新当前用户响应
 tags:
+    - name: AuthService
+      description: 认证服务
     - name: Greeter
+      description: The greeting service definition.
+    - name: UserService
+      description: 用户服务
