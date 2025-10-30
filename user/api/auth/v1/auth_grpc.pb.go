@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: user/v1/user.proto
+// source: auth/v1/auth.proto
 
 package v1
 
@@ -19,11 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_SendRegisterCode_FullMethodName = "/user.v1.AuthService/SendRegisterCode"
-	AuthService_Register_FullMethodName         = "/user.v1.AuthService/Register"
-	AuthService_Login_FullMethodName            = "/user.v1.AuthService/Login"
-	AuthService_RefreshToken_FullMethodName     = "/user.v1.AuthService/RefreshToken"
-	AuthService_Logout_FullMethodName           = "/user.v1.AuthService/Logout"
+	AuthService_SendRegisterCode_FullMethodName = "/auth.v1.AuthService/SendRegisterCode"
+	AuthService_Register_FullMethodName         = "/auth.v1.AuthService/Register"
+	AuthService_Login_FullMethodName            = "/auth.v1.AuthService/Login"
+	AuthService_RefreshToken_FullMethodName     = "/auth.v1.AuthService/RefreshToken"
+	AuthService_Logout_FullMethodName           = "/auth.v1.AuthService/Logout"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -258,7 +258,7 @@ func _AuthService_Logout_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AuthService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "user.v1.AuthService",
+	ServiceName: "auth.v1.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -283,233 +283,5 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "user/v1/user.proto",
-}
-
-const (
-	UserService_GetCurrentUser_FullMethodName       = "/user.v1.UserService/GetCurrentUser"
-	UserService_UpdateCurrentUser_FullMethodName    = "/user.v1.UserService/UpdateCurrentUser"
-	UserService_GetUserPoints_FullMethodName        = "/user.v1.UserService/GetUserPoints"
-	UserService_GetPointTransactions_FullMethodName = "/user.v1.UserService/GetPointTransactions"
-)
-
-// UserServiceClient is the client API for UserService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// 用户服务
-type UserServiceClient interface {
-	// 获取当前用户资料
-	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
-	// 更新当前用户资料
-	UpdateCurrentUser(ctx context.Context, in *UpdateCurrentUserRequest, opts ...grpc.CallOption) (*UpdateCurrentUserResponse, error)
-	// 查询当前可用点数
-	GetUserPoints(ctx context.Context, in *GetUserPointsRequest, opts ...grpc.CallOption) (*GetUserPointsResponse, error)
-	// 查询点数消耗和交易流水记录
-	GetPointTransactions(ctx context.Context, in *GetPointTransactionsRequest, opts ...grpc.CallOption) (*GetPointTransactionsResponse, error)
-}
-
-type userServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewUserServiceClient(cc grpc.ClientConnInterface) UserServiceClient {
-	return &userServiceClient{cc}
-}
-
-func (c *userServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetCurrentUserResponse)
-	err := c.cc.Invoke(ctx, UserService_GetCurrentUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) UpdateCurrentUser(ctx context.Context, in *UpdateCurrentUserRequest, opts ...grpc.CallOption) (*UpdateCurrentUserResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateCurrentUserResponse)
-	err := c.cc.Invoke(ctx, UserService_UpdateCurrentUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) GetUserPoints(ctx context.Context, in *GetUserPointsRequest, opts ...grpc.CallOption) (*GetUserPointsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUserPointsResponse)
-	err := c.cc.Invoke(ctx, UserService_GetUserPoints_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) GetPointTransactions(ctx context.Context, in *GetPointTransactionsRequest, opts ...grpc.CallOption) (*GetPointTransactionsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetPointTransactionsResponse)
-	err := c.cc.Invoke(ctx, UserService_GetPointTransactions_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// UserServiceServer is the server API for UserService service.
-// All implementations must embed UnimplementedUserServiceServer
-// for forward compatibility.
-//
-// 用户服务
-type UserServiceServer interface {
-	// 获取当前用户资料
-	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
-	// 更新当前用户资料
-	UpdateCurrentUser(context.Context, *UpdateCurrentUserRequest) (*UpdateCurrentUserResponse, error)
-	// 查询当前可用点数
-	GetUserPoints(context.Context, *GetUserPointsRequest) (*GetUserPointsResponse, error)
-	// 查询点数消耗和交易流水记录
-	GetPointTransactions(context.Context, *GetPointTransactionsRequest) (*GetPointTransactionsResponse, error)
-	mustEmbedUnimplementedUserServiceServer()
-}
-
-// UnimplementedUserServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedUserServiceServer struct{}
-
-func (UnimplementedUserServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
-}
-func (UnimplementedUserServiceServer) UpdateCurrentUser(context.Context, *UpdateCurrentUserRequest) (*UpdateCurrentUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateCurrentUser not implemented")
-}
-func (UnimplementedUserServiceServer) GetUserPoints(context.Context, *GetUserPointsRequest) (*GetUserPointsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserPoints not implemented")
-}
-func (UnimplementedUserServiceServer) GetPointTransactions(context.Context, *GetPointTransactionsRequest) (*GetPointTransactionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPointTransactions not implemented")
-}
-func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
-func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
-
-// UnsafeUserServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to UserServiceServer will
-// result in compilation errors.
-type UnsafeUserServiceServer interface {
-	mustEmbedUnimplementedUserServiceServer()
-}
-
-func RegisterUserServiceServer(s grpc.ServiceRegistrar, srv UserServiceServer) {
-	// If the following call pancis, it indicates UnimplementedUserServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&UserService_ServiceDesc, srv)
-}
-
-func _UserService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCurrentUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).GetCurrentUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_GetCurrentUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_UpdateCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateCurrentUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).UpdateCurrentUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_UpdateCurrentUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).UpdateCurrentUser(ctx, req.(*UpdateCurrentUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_GetUserPoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserPointsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).GetUserPoints(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_GetUserPoints_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).GetUserPoints(ctx, req.(*GetUserPointsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_GetPointTransactions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPointTransactionsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).GetPointTransactions(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_GetPointTransactions_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).GetPointTransactions(ctx, req.(*GetPointTransactionsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var UserService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "user.v1.UserService",
-	HandlerType: (*UserServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetCurrentUser",
-			Handler:    _UserService_GetCurrentUser_Handler,
-		},
-		{
-			MethodName: "UpdateCurrentUser",
-			Handler:    _UserService_UpdateCurrentUser_Handler,
-		},
-		{
-			MethodName: "GetUserPoints",
-			Handler:    _UserService_GetUserPoints_Handler,
-		},
-		{
-			MethodName: "GetPointTransactions",
-			Handler:    _UserService_GetPointTransactions_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "user/v1/user.proto",
+	Metadata: "auth/v1/auth.proto",
 }

@@ -2,14 +2,14 @@
 // versions:
 // 	protoc-gen-go v1.36.7
 // 	protoc        v5.29.3
-// source: user/v1/user.proto
+// source: auth/v1/auth.proto
 
 package v1
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -568,608 +568,11 @@ func (x *LogoutResponse) GetMessage() string {
 	return ""
 }
 
-// 获取当前用户请求
-type GetCurrentUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetCurrentUserRequest) Reset() {
-	*x = GetCurrentUserRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetCurrentUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetCurrentUserRequest) ProtoMessage() {}
-
-func (x *GetCurrentUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetCurrentUserRequest.ProtoReflect.Descriptor instead.
-func (*GetCurrentUserRequest) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{10}
-}
-
-// 获取当前用户响应
-type GetCurrentUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Nickname      string                 `protobuf:"bytes,3,opt,name=nickname,proto3" json:"nickname,omitempty"`
-	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	IsPremium     bool                   `protobuf:"varint,5,opt,name=is_premium,json=isPremium,proto3" json:"is_premium,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetCurrentUserResponse) Reset() {
-	*x = GetCurrentUserResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetCurrentUserResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetCurrentUserResponse) ProtoMessage() {}
-
-func (x *GetCurrentUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetCurrentUserResponse.ProtoReflect.Descriptor instead.
-func (*GetCurrentUserResponse) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *GetCurrentUserResponse) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *GetCurrentUserResponse) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *GetCurrentUserResponse) GetNickname() string {
-	if x != nil {
-		return x.Nickname
-	}
-	return ""
-}
-
-func (x *GetCurrentUserResponse) GetAvatarUrl() string {
-	if x != nil {
-		return x.AvatarUrl
-	}
-	return ""
-}
-
-func (x *GetCurrentUserResponse) GetIsPremium() bool {
-	if x != nil {
-		return x.IsPremium
-	}
-	return false
-}
-
-func (x *GetCurrentUserResponse) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-func (x *GetCurrentUserResponse) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
-}
-
-// 更新当前用户请求
-type UpdateCurrentUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nickname      string                 `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname,omitempty"`
-	AvatarUrl     string                 `protobuf:"bytes,2,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateCurrentUserRequest) Reset() {
-	*x = UpdateCurrentUserRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateCurrentUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateCurrentUserRequest) ProtoMessage() {}
-
-func (x *UpdateCurrentUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateCurrentUserRequest.ProtoReflect.Descriptor instead.
-func (*UpdateCurrentUserRequest) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *UpdateCurrentUserRequest) GetNickname() string {
-	if x != nil {
-		return x.Nickname
-	}
-	return ""
-}
-
-func (x *UpdateCurrentUserRequest) GetAvatarUrl() string {
-	if x != nil {
-		return x.AvatarUrl
-	}
-	return ""
-}
-
-// 更新当前用户响应
-type UpdateCurrentUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Nickname      string                 `protobuf:"bytes,3,opt,name=nickname,proto3" json:"nickname,omitempty"`
-	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	IsPremium     bool                   `protobuf:"varint,5,opt,name=is_premium,json=isPremium,proto3" json:"is_premium,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateCurrentUserResponse) Reset() {
-	*x = UpdateCurrentUserResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateCurrentUserResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateCurrentUserResponse) ProtoMessage() {}
-
-func (x *UpdateCurrentUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateCurrentUserResponse.ProtoReflect.Descriptor instead.
-func (*UpdateCurrentUserResponse) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *UpdateCurrentUserResponse) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *UpdateCurrentUserResponse) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *UpdateCurrentUserResponse) GetNickname() string {
-	if x != nil {
-		return x.Nickname
-	}
-	return ""
-}
-
-func (x *UpdateCurrentUserResponse) GetAvatarUrl() string {
-	if x != nil {
-		return x.AvatarUrl
-	}
-	return ""
-}
-
-func (x *UpdateCurrentUserResponse) GetIsPremium() bool {
-	if x != nil {
-		return x.IsPremium
-	}
-	return false
-}
-
-func (x *UpdateCurrentUserResponse) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-func (x *UpdateCurrentUserResponse) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
-}
-
-// 获取用户点数请求
-type GetUserPointsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetUserPointsRequest) Reset() {
-	*x = GetUserPointsRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetUserPointsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetUserPointsRequest) ProtoMessage() {}
-
-func (x *GetUserPointsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetUserPointsRequest.ProtoReflect.Descriptor instead.
-func (*GetUserPointsRequest) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{14}
-}
-
-// 获取用户点数响应
-type GetUserPointsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	CurrentPoints uint32                 `protobuf:"varint,2,opt,name=current_points,json=currentPoints,proto3" json:"current_points,omitempty"`
-	TotalConsumed uint32                 `protobuf:"varint,3,opt,name=total_consumed,json=totalConsumed,proto3" json:"total_consumed,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetUserPointsResponse) Reset() {
-	*x = GetUserPointsResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetUserPointsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetUserPointsResponse) ProtoMessage() {}
-
-func (x *GetUserPointsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetUserPointsResponse.ProtoReflect.Descriptor instead.
-func (*GetUserPointsResponse) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *GetUserPointsResponse) GetUserId() int64 {
-	if x != nil {
-		return x.UserId
-	}
-	return 0
-}
-
-func (x *GetUserPointsResponse) GetCurrentPoints() uint32 {
-	if x != nil {
-		return x.CurrentPoints
-	}
-	return 0
-}
-
-func (x *GetUserPointsResponse) GetTotalConsumed() uint32 {
-	if x != nil {
-		return x.TotalConsumed
-	}
-	return 0
-}
-
-// 获取点数交易流水请求
-type GetPointTransactionsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetPointTransactionsRequest) Reset() {
-	*x = GetPointTransactionsRequest{}
-	mi := &file_auth_v1_auth_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetPointTransactionsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetPointTransactionsRequest) ProtoMessage() {}
-
-func (x *GetPointTransactionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetPointTransactionsRequest.ProtoReflect.Descriptor instead.
-func (*GetPointTransactionsRequest) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *GetPointTransactionsRequest) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *GetPointTransactionsRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-// 获取点数交易流水响应
-type GetPointTransactionsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Transactions  []*PointTransaction    `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
-	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
-	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetPointTransactionsResponse) Reset() {
-	*x = GetPointTransactionsResponse{}
-	mi := &file_auth_v1_auth_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetPointTransactionsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetPointTransactionsResponse) ProtoMessage() {}
-
-func (x *GetPointTransactionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetPointTransactionsResponse.ProtoReflect.Descriptor instead.
-func (*GetPointTransactionsResponse) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *GetPointTransactionsResponse) GetTransactions() []*PointTransaction {
-	if x != nil {
-		return x.Transactions
-	}
-	return nil
-}
-
-func (x *GetPointTransactionsResponse) GetTotal() int32 {
-	if x != nil {
-		return x.Total
-	}
-	return 0
-}
-
-func (x *GetPointTransactionsResponse) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *GetPointTransactionsResponse) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-// 点数交易记录
-type PointTransaction struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
-	Amount        uint32                 `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
-	RelatedBookId int64                  `protobuf:"varint,5,opt,name=related_book_id,json=relatedBookId,proto3" json:"related_book_id,omitempty"`
-	Description   string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PointTransaction) Reset() {
-	*x = PointTransaction{}
-	mi := &file_auth_v1_auth_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PointTransaction) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PointTransaction) ProtoMessage() {}
-
-func (x *PointTransaction) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_v1_auth_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PointTransaction.ProtoReflect.Descriptor instead.
-func (*PointTransaction) Descriptor() ([]byte, []int) {
-	return file_auth_v1_auth_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *PointTransaction) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *PointTransaction) GetUserId() int64 {
-	if x != nil {
-		return x.UserId
-	}
-	return 0
-}
-
-func (x *PointTransaction) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *PointTransaction) GetAmount() uint32 {
-	if x != nil {
-		return x.Amount
-	}
-	return 0
-}
-
-func (x *PointTransaction) GetRelatedBookId() int64 {
-	if x != nil {
-		return x.RelatedBookId
-	}
-	return 0
-}
-
-func (x *PointTransaction) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *PointTransaction) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-func (x *PointTransaction) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
-}
-
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
 
 const file_auth_v1_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x12auth/v1/user.proto\x12\auser.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"/\n" +
+	"\x12auth/v1/auth.proto\x12\aauth.v1\x1a\x1cgoogle/api/annotations.proto\"/\n" +
 	"\x17SendRegisterCodeRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"N\n" +
 	"\x18SendRegisterCodeResponse\x12\x18\n" +
@@ -1201,71 +604,13 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"D\n" +
 	"\x0eLogoutResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\x17\n" +
-	"\x15GetCurrentUserRequest\"\x8e\x02\n" +
-	"\x16GetCurrentUserResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
-	"\bnickname\x18\x03 \x01(\tR\bnickname\x12\x1d\n" +
-	"\n" +
-	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x1d\n" +
-	"\n" +
-	"is_premium\x18\x05 \x01(\bR\tisPremium\x129\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
-	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"U\n" +
-	"\x18UpdateCurrentUserRequest\x12\x1a\n" +
-	"\bnickname\x18\x01 \x01(\tR\bnickname\x12\x1d\n" +
-	"\n" +
-	"avatar_url\x18\x02 \x01(\tR\tavatarUrl\"\x91\x02\n" +
-	"\x19UpdateCurrentUserResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
-	"\bnickname\x18\x03 \x01(\tR\bnickname\x12\x1d\n" +
-	"\n" +
-	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x1d\n" +
-	"\n" +
-	"is_premium\x18\x05 \x01(\bR\tisPremium\x129\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
-	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x16\n" +
-	"\x14GetUserPointsRequest\"~\n" +
-	"\x15GetUserPointsResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12%\n" +
-	"\x0ecurrent_points\x18\x02 \x01(\rR\rcurrentPoints\x12%\n" +
-	"\x0etotal_consumed\x18\x03 \x01(\rR\rtotalConsumed\"N\n" +
-	"\x1bGetPointTransactionsRequest\x12\x12\n" +
-	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"\xa4\x01\n" +
-	"\x1cGetPointTransactionsResponse\x12=\n" +
-	"\ftransactions\x18\x01 \x03(\v2\x19.user.v1.PointTransactionR\ftransactions\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x12\n" +
-	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"\xa7\x02\n" +
-	"\x10PointTransaction\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x12\n" +
-	"\x04type\x18\x03 \x01(\tR\x04type\x12\x16\n" +
-	"\x06amount\x18\x04 \x01(\rR\x06amount\x12&\n" +
-	"\x0frelated_book_id\x18\x05 \x01(\x03R\rrelatedBookId\x12 \n" +
-	"\vdescription\x18\x06 \x01(\tR\vdescription\x129\n" +
-	"\n" +
-	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
-	"\n" +
-	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt2\xe7\x02\n" +
-	"\vAuthService\x12W\n" +
-	"\x10SendRegisterCode\x12 .user.v1.SendRegisterCodeRequest\x1a!.user.v1.SendRegisterCodeResponse\x12?\n" +
-	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
-	"\x05Login\x12\x15.user.v1.LoginRequest\x1a\x16.user.v1.LoginResponse\x12K\n" +
-	"\fRefreshToken\x12\x1c.user.v1.RefreshTokenRequest\x1a\x1d.user.v1.RefreshTokenResponse\x129\n" +
-	"\x06Logout\x12\x16.user.v1.LogoutRequest\x1a\x17.user.v1.LogoutResponse2\xf1\x02\n" +
-	"\vUserService\x12Q\n" +
-	"\x0eGetCurrentUser\x12\x1e.user.v1.GetCurrentUserRequest\x1a\x1f.user.v1.GetCurrentUserResponse\x12Z\n" +
-	"\x11UpdateCurrentUser\x12!.user.v1.UpdateCurrentUserRequest\x1a\".user.v1.UpdateCurrentUserResponse\x12N\n" +
-	"\rGetUserPoints\x12\x1d.user.v1.GetUserPointsRequest\x1a\x1e.user.v1.GetUserPointsResponse\x12c\n" +
-	"\x14GetPointTransactions\x12$.user.v1.GetPointTransactionsRequest\x1a%.user.v1.GetPointTransactionsResponseB\x15Z\x13auth/api/user/v1;v1b\x06proto3"
+	"\amessage\x18\x02 \x01(\tR\amessage2\xf8\x03\n" +
+	"\vAuthService\x12v\n" +
+	"\x10SendRegisterCode\x12 .auth.v1.SendRegisterCodeRequest\x1a!.auth.v1.SendRegisterCodeResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/auth/send-code\x12]\n" +
+	"\bRegister\x12\x18.auth.v1.RegisterRequest\x1a\x19.auth.v1.RegisterResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/auth/register\x12Q\n" +
+	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12h\n" +
+	"\fRefreshToken\x12\x1c.auth.v1.RefreshTokenRequest\x1a\x1d.auth.v1.RefreshTokenResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/auth/refresh\x12U\n" +
+	"\x06Logout\x12\x16.auth.v1.LogoutRequest\x1a\x17.auth.v1.LogoutResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logoutB\x15Z\x13user/api/auth/v1;v1b\x06proto3"
 
 var (
 	file_auth_v1_auth_proto_rawDescOnce sync.Once
@@ -1279,60 +624,35 @@ func file_auth_v1_auth_proto_rawDescGZIP() []byte {
 	return file_auth_v1_auth_proto_rawDescData
 }
 
-var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_auth_v1_auth_proto_goTypes = []any{
-	(*SendRegisterCodeRequest)(nil),      // 0: user.v1.SendRegisterCodeRequest
-	(*SendRegisterCodeResponse)(nil),     // 1: user.v1.SendRegisterCodeResponse
-	(*RegisterRequest)(nil),              // 2: user.v1.RegisterRequest
-	(*RegisterResponse)(nil),             // 3: user.v1.RegisterResponse
-	(*LoginRequest)(nil),                 // 4: user.v1.LoginRequest
-	(*LoginResponse)(nil),                // 5: user.v1.LoginResponse
-	(*RefreshTokenRequest)(nil),          // 6: user.v1.RefreshTokenRequest
-	(*RefreshTokenResponse)(nil),         // 7: user.v1.RefreshTokenResponse
-	(*LogoutRequest)(nil),                // 8: user.v1.LogoutRequest
-	(*LogoutResponse)(nil),               // 9: user.v1.LogoutResponse
-	(*GetCurrentUserRequest)(nil),        // 10: user.v1.GetCurrentUserRequest
-	(*GetCurrentUserResponse)(nil),       // 11: user.v1.GetCurrentUserResponse
-	(*UpdateCurrentUserRequest)(nil),     // 12: user.v1.UpdateCurrentUserRequest
-	(*UpdateCurrentUserResponse)(nil),    // 13: user.v1.UpdateCurrentUserResponse
-	(*GetUserPointsRequest)(nil),         // 14: user.v1.GetUserPointsRequest
-	(*GetUserPointsResponse)(nil),        // 15: user.v1.GetUserPointsResponse
-	(*GetPointTransactionsRequest)(nil),  // 16: user.v1.GetPointTransactionsRequest
-	(*GetPointTransactionsResponse)(nil), // 17: user.v1.GetPointTransactionsResponse
-	(*PointTransaction)(nil),             // 18: user.v1.PointTransaction
-	(*timestamppb.Timestamp)(nil),        // 19: google.protobuf.Timestamp
+	(*SendRegisterCodeRequest)(nil),  // 0: auth.v1.SendRegisterCodeRequest
+	(*SendRegisterCodeResponse)(nil), // 1: auth.v1.SendRegisterCodeResponse
+	(*RegisterRequest)(nil),          // 2: auth.v1.RegisterRequest
+	(*RegisterResponse)(nil),         // 3: auth.v1.RegisterResponse
+	(*LoginRequest)(nil),             // 4: auth.v1.LoginRequest
+	(*LoginResponse)(nil),            // 5: auth.v1.LoginResponse
+	(*RefreshTokenRequest)(nil),      // 6: auth.v1.RefreshTokenRequest
+	(*RefreshTokenResponse)(nil),     // 7: auth.v1.RefreshTokenResponse
+	(*LogoutRequest)(nil),            // 8: auth.v1.LogoutRequest
+	(*LogoutResponse)(nil),           // 9: auth.v1.LogoutResponse
 }
 var file_auth_v1_auth_proto_depIdxs = []int32{
-	19, // 0: user.v1.GetCurrentUserResponse.created_at:type_name -> google.protobuf.Timestamp
-	19, // 1: user.v1.GetCurrentUserResponse.updated_at:type_name -> google.protobuf.Timestamp
-	19, // 2: user.v1.UpdateCurrentUserResponse.created_at:type_name -> google.protobuf.Timestamp
-	19, // 3: user.v1.UpdateCurrentUserResponse.updated_at:type_name -> google.protobuf.Timestamp
-	18, // 4: user.v1.GetPointTransactionsResponse.transactions:type_name -> user.v1.PointTransaction
-	19, // 5: user.v1.PointTransaction.created_at:type_name -> google.protobuf.Timestamp
-	19, // 6: user.v1.PointTransaction.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 7: user.v1.AuthService.SendRegisterCode:input_type -> user.v1.SendRegisterCodeRequest
-	2,  // 8: user.v1.AuthService.Register:input_type -> user.v1.RegisterRequest
-	4,  // 9: user.v1.AuthService.Login:input_type -> user.v1.LoginRequest
-	6,  // 10: user.v1.AuthService.RefreshToken:input_type -> user.v1.RefreshTokenRequest
-	8,  // 11: user.v1.AuthService.Logout:input_type -> user.v1.LogoutRequest
-	10, // 12: user.v1.UserService.GetCurrentUser:input_type -> user.v1.GetCurrentUserRequest
-	12, // 13: user.v1.UserService.UpdateCurrentUser:input_type -> user.v1.UpdateCurrentUserRequest
-	14, // 14: user.v1.UserService.GetUserPoints:input_type -> user.v1.GetUserPointsRequest
-	16, // 15: user.v1.UserService.GetPointTransactions:input_type -> user.v1.GetPointTransactionsRequest
-	1,  // 16: user.v1.AuthService.SendRegisterCode:output_type -> user.v1.SendRegisterCodeResponse
-	3,  // 17: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
-	5,  // 18: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
-	7,  // 19: user.v1.AuthService.RefreshToken:output_type -> user.v1.RefreshTokenResponse
-	9,  // 20: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
-	11, // 21: user.v1.UserService.GetCurrentUser:output_type -> user.v1.GetCurrentUserResponse
-	13, // 22: user.v1.UserService.UpdateCurrentUser:output_type -> user.v1.UpdateCurrentUserResponse
-	15, // 23: user.v1.UserService.GetUserPoints:output_type -> user.v1.GetUserPointsResponse
-	17, // 24: user.v1.UserService.GetPointTransactions:output_type -> user.v1.GetPointTransactionsResponse
-	16, // [16:25] is the sub-list for method output_type
-	7,  // [7:16] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	0, // 0: auth.v1.AuthService.SendRegisterCode:input_type -> auth.v1.SendRegisterCodeRequest
+	2, // 1: auth.v1.AuthService.Register:input_type -> auth.v1.RegisterRequest
+	4, // 2: auth.v1.AuthService.Login:input_type -> auth.v1.LoginRequest
+	6, // 3: auth.v1.AuthService.RefreshToken:input_type -> auth.v1.RefreshTokenRequest
+	8, // 4: auth.v1.AuthService.Logout:input_type -> auth.v1.LogoutRequest
+	1, // 5: auth.v1.AuthService.SendRegisterCode:output_type -> auth.v1.SendRegisterCodeResponse
+	3, // 6: auth.v1.AuthService.Register:output_type -> auth.v1.RegisterResponse
+	5, // 7: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	7, // 8: auth.v1.AuthService.RefreshToken:output_type -> auth.v1.RefreshTokenResponse
+	9, // 9: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_auth_v1_auth_proto_init() }
@@ -1346,9 +666,9 @@ func file_auth_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_v1_auth_proto_rawDesc), len(file_auth_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   10,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   1,
 		},
 		GoTypes:           file_auth_v1_auth_proto_goTypes,
 		DependencyIndexes: file_auth_v1_auth_proto_depIdxs,
