@@ -1,7 +1,9 @@
 package server
 
 import (
+	authv1 "user/api/auth/v1"
 	v1 "user/api/helloworld/v1"
+	userv1 "user/api/user/v1"
 	"user/internal/conf"
 	"user/internal/service"
 
@@ -11,7 +13,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, authService *service.AuthService, userService *service.UserService, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -28,5 +30,7 @@ func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, logger log.L
 	}
 	srv := grpc.NewServer(opts...)
 	v1.RegisterGreeterServer(srv, greeter)
+	authv1.RegisterAuthServiceServer(srv, authService)
+	userv1.RegisterUserServiceServer(srv, userService)
 	return srv
 }

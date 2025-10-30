@@ -1,7 +1,9 @@
 package server
 
 import (
+	authv1 "user/api/auth/v1"
 	v1 "user/api/helloworld/v1"
+	userv1 "user/api/user/v1"
 	"user/internal/conf"
 	"user/internal/service"
 
@@ -11,7 +13,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, authService *service.AuthService, userService *service.UserService, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -28,5 +30,7 @@ func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, logger log.L
 	}
 	srv := http.NewServer(opts...)
 	v1.RegisterGreeterHTTPServer(srv, greeter)
+	authv1.RegisterAuthServiceHTTPServer(srv, authService)
+	userv1.RegisterUserServiceHTTPServer(srv, userService)
 	return srv
 }
