@@ -8,4 +8,5 @@ import (
 var ProviderSet = wire.NewSet(
 	NewGreeterUsecase,
 	NewUserUsecase,
+	NewAuthUsecase,
 )

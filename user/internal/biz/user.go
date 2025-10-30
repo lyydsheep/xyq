@@ -8,11 +8,12 @@ import (
 	"os"
 	"strings"
 
+	"math/big"
+	"time"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"math/big"
-	"time"
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -502,4 +503,25 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, id int64, req *UpdateUser
 
 	uc.log.Log(log.LevelInfo, "Successfully updated user with id: ", id)
 	return nil
+}
+
+// GetUserByID 根据ID获取用户信息
+func (uc *UserUsecase) GetUserByID(ctx context.Context, id int64) (*User, error) {
+	uc.log.Log(log.LevelInfo, "Getting user with id: ", id)
+
+	// 参数验证
+	if id <= 0 {
+		uc.log.Log(log.LevelWarn, "Invalid user id: ", id)
+		return nil, errors.New("invalid user id")
+	}
+
+	// 获取用户信息
+	user, err := uc.userRepo.GetByID(ctx, id)
+	if err != nil {
+		uc.log.Log(log.LevelError, "Failed to get user with id: ", id, ", error: ", err)
+		return nil, err
+	}
+
+	uc.log.Log(log.LevelInfo, "Successfully got user with id: ", id)
+	return user, nil
 }
