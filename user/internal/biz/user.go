@@ -55,7 +55,7 @@ type VerificationCode struct {
 
 // User 用户基本信息表
 type User struct {
-	ID           int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	ID           int64     `gorm:"column:id;primaryKey" json:"id"`
 	Email        string    `gorm:"column:email;uniqueIndex;not null" json:"email"`
 	PasswordHash string    `gorm:"column:password_hash;not null" json:"-"`
 	Nickname     string    `gorm:"column:nickname;not null;default:'新用户'" json:"nickname"`
@@ -96,20 +96,27 @@ type CodeRepository interface {
 	CheckAndSetSendRateLimit(ctx context.Context, email string, duration time.Duration) (bool, error)
 }
 
-// GreeterUsecase is a Greeter usecase.
+// SnowflakeIDGenerator 雪花ID生成器接口
+type SnowflakeIDGenerator interface {
+	GenerateID() int64
+}
+
+// UserUsecase is a Greeter usecase.
 type UserUsecase struct {
 	userRepo UserRepository
 	codeRepo CodeRepository
 	authRepo AuthRepository
+	idGen   SnowflakeIDGenerator
 	log      *log.Helper
 }
 
 // NewUserUsecase new a User usecase.
-func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, authRepo AuthRepository, logger log.Logger) *UserUsecase {
+func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, authRepo AuthRepository, idGen SnowflakeIDGenerator, logger log.Logger) *UserUsecase {
 	return &UserUsecase{
 		userRepo: userRepo,
 		codeRepo: codeRepo,
 		authRepo: authRepo,
+		idGen:   idGen,
 		log:      log.NewHelper(logger),
 	}
 }
@@ -236,11 +243,16 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 		return nil, err
 	}
 
+	// 生成用户ID
+	userID := uc.idGen.GenerateID()
+	uc.log.WithContext(ctx).Debugf("Generated user ID: %d", userID)
+
 	// 创建用户
 	// 注意：这里不提前检查邮箱是否已存在，而是直接尝试创建
 	// 如果邮箱已存在，数据库的唯一约束会阻止插入并返回错误
 	// 这种方式避免了竞态条件问题
 	user := &User{
+		ID:           userID,
 		Email:        email,
 		PasswordHash: hashedPassword,
 		Nickname:     nickname,

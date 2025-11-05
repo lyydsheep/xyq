@@ -15,7 +15,7 @@ const (
 
 // PointTransaction 点数交易流水表
 type PointTransaction struct {
-	ID            int64                `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	ID            int64                `gorm:"column:id;primaryKey" json:"id"`
 	UserID        int64                `gorm:"column:user_id;not null;index" json:"user_id"`
 	Type          PointTransactionType `gorm:"column:type;not null" json:"type"`
 	Amount        uint32               `gorm:"column:amount;not null" json:"amount"`

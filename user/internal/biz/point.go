@@ -7,7 +7,7 @@ import (
 
 // UserPoint 用户点数表
 type UserPoint struct {
-	ID            int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	ID            int64     `gorm:"column:id;primaryKey" json:"id"`
 	UserID        int64     `gorm:"column:user_id;uniqueIndex;not null" json:"user_id"`
 	CurrentPoints uint32    `gorm:"column:current_points;not null;default:0" json:"current_points"`
 	TotalConsumed uint32    `gorm:"column:total_consumed;not null;default:0" json:"total_consumed"`

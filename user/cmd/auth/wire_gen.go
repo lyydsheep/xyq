@@ -12,6 +12,7 @@ import (
 	"user/internal/biz"
 	"user/internal/conf"
 	"user/internal/data"
+	"user/internal/pkg/snowflake"
 	"user/internal/server"
 	"user/internal/service"
 )
@@ -36,7 +37,13 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	db := data.NewDB(dataData)
 	userRepository := data.NewUserRepository(db, logger)
 	codeRepository := data.NewCodeRepository(dataData, logger)
-	userUsecase := biz.NewUserUsecase(userRepository, codeRepository, authRepository, logger)
+	snowflakeConfig := snowflake.DefaultSnowflakeConfig()
+	snowflakeGenerator, err := snowflake.NewSnowflakeGenerator(snowflakeConfig, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	userUsecase := biz.NewUserUsecase(userRepository, codeRepository, authRepository, snowflakeGenerator, logger)
 	authService := service.NewAuthService(authUsecase, userUsecase, logger)
 	userService := service.NewUserService(userUsecase, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, authService, userService, logger)
