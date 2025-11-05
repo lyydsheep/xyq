@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "user/api/user/v1;v1";
+option java_package = "user.api.user.v1";
+
+import "errors/errors.proto";
+
+// UserService错误定义
+enum UserErrorReason {
+  option (errors.default_code) = 500;
+  
+  // 认证相关错误 (401)
+  // 用户认证相关错误
+  USER_INVALID_TOKEN = 0 [(errors.code) = 401];
+  USER_TOKEN_EXPIRED = 1 [(errors.code) = 401];
+  USER_INVALID_CREDENTIALS = 2 [(errors.code) = 401];
+  USER_REFRESH_TOKEN_INVALID = 3 [(errors.code) = 401];
+  
+  // 请求错误 (400)
+  // 用户输入相关错误
+  USER_INVALID_EMAIL = 4 [(errors.code) = 400];
+  USER_INVALID_VERIFICATION_CODE = 5 [(errors.code) = 400];
+  USER_VERIFICATION_CODE_EXPIRED = 6 [(errors.code) = 400];
+  USER_INVALID_REQUEST = 7 [(errors.code) = 400];
+  USER_INVALID_NICKNAME = 8 [(errors.code) = 400];
+  
+  // 资源冲突 (409)
+  // 用户资源冲突错误
+  USER_EMAIL_ALREADY_EXISTS = 9 [(errors.code) = 409];
+  USER_NICKNAME_ALREADY_EXISTS = 10 [(errors.code) = 409];
+  
+  // 资源不存在 (404)
+  // 用户资源不存在错误
+  USER_NOT_FOUND = 11 [(errors.code) = 404];
+  USER_PROFILE_NOT_FOUND = 12 [(errors.code) = 404];
+  
+  // 请求过多 (429)
+  // 用户频率限制错误
+  USER_TOO_MANY_REQUESTS = 13 [(errors.code) = 429];
+  USER_LOGIN_TOO_MANY = 14 [(errors.code) = 429];
+  
+  // 系统错误 (500)
+  // 用户服务内部错误
+  USER_DATABASE_ERROR = 15 [(errors.code) = 500];
+  USER_INTERNAL_ERROR = 16 [(errors.code) = 500];
+  USER_SERVICE_UNAVAILABLE = 17 [(errors.code) = 503];
+}
+
+// AuthService错误定义
+enum AuthErrorReason {
+  option (errors.default_code) = 500;
+  
+  // 认证相关错误 (401)
+  AUTH_INVALID_CREDENTIALS = 0 [(errors.code) = 401];
+  AUTH_TOKEN_INVALID = 1 [(errors.code) = 401];
+  AUTH_TOKEN_EXPIRED = 2 [(errors.code) = 401];
+  AUTH_REFRESH_TOKEN_INVALID = 3 [(errors.code) = 401];
+  
+  // 请求错误 (400)
+  AUTH_INVALID_REQUEST = 4 [(errors.code) = 400];
+  AUTH_INVALID_EMAIL = 5 [(errors.code) = 400];
+  AUTH_INVALID_CODE = 6 [(errors.code) = 400];
+  
+  // 资源冲突 (409)
+  AUTH_EMAIL_EXISTS = 7 [(errors.code) = 409];
+  
+  // 请求过多 (429)
+  AUTH_TOO_MANY_REQUESTS = 8 [(errors.code) = 429];
+  AUTH_LOGIN_BLOCKED = 9 [(errors.code) = 429];
+  
+  // 系统错误 (500)
+  AUTH_DATABASE_ERROR = 10 [(errors.code) = 500];
+  AUTH_SERVICE_ERROR = 11 [(errors.code) = 500];
+  AUTH_SERVICE_UNAVAILABLE = 12 [(errors.code) = 503];
+}
+
+// 系统级错误定义
+enum SystemErrorReason {
+  option (errors.default_code) = 500;
+  
+  // 数据库错误
+  DATABASE_CONNECTION_ERROR = 0 [(errors.code) = 500];
+  DATABASE_OPERATION_ERROR = 1 [(errors.code) = 500];
+  DATABASE_TIMEOUT_ERROR = 2 [(errors.code) = 500];
+  
+  // 服务错误
+  SERVICE_UNAVAILABLE = 3 [(errors.code) = 503];
+  SERVICE_OVERLOADED = 4 [(errors.code) = 503];
+  
+  // 基础设施错误
+  REDIS_CONNECTION_ERROR = 5 [(errors.code) = 500];
+  EXTERNAL_SERVICE_ERROR = 6 [(errors.code) = 502];
+}
