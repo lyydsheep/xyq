@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v5"
+	"user/internal/pkg/tracing"
 )
 
 // Auth Errors
@@ -129,18 +130,26 @@ func generateRefreshToken(userID int64) (string, int32, error) {
 
 // RefreshToken 刷新访问令牌
 func (uc *AuthUsecase) RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error) {
-	uc.log.Log(log.LevelInfo, "Refreshing token")
+	ctx, span := tracing.StartSpan(ctx, "AuthUsecase.RefreshToken")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation":    "refresh_token",
+		"token_length": len(refreshToken),
+	})
+
+	uc.log.WithContext(ctx).Info("Refreshing token")
 
 	// 参数验证
 	if refreshToken == "" {
-		uc.log.Log(log.LevelWarn, "Empty refresh token provided")
+		uc.log.WithContext(ctx).Warn("Empty refresh token provided")
 		return nil, ErrInvalidToken
 	}
 
 	// 验证刷新令牌
 	userID, err := uc.authRepo.GetUserIDByRefreshToken(ctx, refreshToken)
 	if err != nil {
-		uc.log.Log(log.LevelWarn, "Invalid refresh token provided")
+		uc.log.WithContext(ctx).Warn("Invalid refresh token provided")
 		return nil, ErrInvalidToken
 	}
 
@@ -153,13 +162,13 @@ func (uc *AuthUsecase) refreshTokenInTransaction(ctx context.Context, userID int
 	// 生成新的令牌对
 	accessToken, accessExpiresIn, err := generateAccessToken(userID)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to generate access token during refresh for user id: ", userID, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to generate access token during refresh for user id: %d, error: %v", userID, err)
 		return nil, err
 	}
 
 	newRefreshToken, refreshExpiresIn, err := generateRefreshToken(userID)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to generate refresh token during refresh for user id: ", userID, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to generate refresh token during refresh for user id: %d, error: %v", userID, err)
 		return nil, err
 	}
 
@@ -167,11 +176,17 @@ func (uc *AuthUsecase) refreshTokenInTransaction(ctx context.Context, userID int
 	refreshTokenExpiresAt := time.Now().Add(time.Duration(refreshExpiresIn) * time.Second)
 	err = uc.authRepo.RefreshTokenAtomically(ctx, userID, oldRefreshToken, newRefreshToken, refreshTokenExpiresAt)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to refresh token atomically for user id: ", userID, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to refresh token atomically for user id: %d, error: %v", userID, err)
 		return nil, err
 	}
 
-	uc.log.Log(log.LevelInfo, "Token refresh successful for user id: ", userID)
+	uc.log.WithContext(ctx).Infof("Token refresh successful for user id: %d", userID)
+	tracing.AddSpanEvent(ctx, "token_refresh_success", map[string]interface{}{
+		"user_id":            userID,
+		"access_expires_in":  accessExpiresIn,
+		"refresh_expires_in": refreshExpiresIn,
+	})
+
 	return &TokenPair{
 		AccessToken:      accessToken,
 		AccessExpiresIn:  accessExpiresIn,
@@ -182,37 +197,53 @@ func (uc *AuthUsecase) refreshTokenInTransaction(ctx context.Context, userID int
 
 // Logout 用户登出
 func (uc *AuthUsecase) Logout(ctx context.Context, refreshToken string) error {
-	uc.log.Log(log.LevelInfo, "User logout")
+	ctx, span := tracing.StartSpan(ctx, "AuthUsecase.Logout")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation":    "logout",
+		"token_length": len(refreshToken),
+	})
+
+	uc.log.WithContext(ctx).Info("User logout")
 
 	// 参数验证
 	if refreshToken == "" {
-		uc.log.Log(log.LevelWarn, "Empty refresh token provided for logout")
+		uc.log.WithContext(ctx).Warn("Empty refresh token provided for logout")
 		return errors.New("refresh token is required")
 	}
 
 	// 删除刷新令牌
 	err := uc.authRepo.DeleteRefreshToken(ctx, refreshToken)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to delete refresh token during logout, error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to delete refresh token during logout, error: %v", err)
 		return err
 	}
 
-	uc.log.Log(log.LevelInfo, "User logout successful")
+	uc.log.WithContext(ctx).Info("User logout successful")
 	return nil
 }
 
 // ValidateToken 验证访问令牌（JWT版本）
 func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (int64, error) {
+	ctx, span := tracing.StartSpan(ctx, "AuthUsecase.ValidateToken")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation":    "validate_token",
+		"token_length": len(accessToken),
+	})
+
 	// 参数验证
 	if accessToken == "" {
-		uc.log.Log(log.LevelWarn, "Empty access token provided for validation")
+		uc.log.WithContext(ctx).Warn("Empty access token provided for validation")
 		return 0, ErrInvalidToken
 	}
 
 	// 从环境变量获取JWT访问令牌密钥
 	secret := os.Getenv("JWT_ACCESS_SECRET")
 	if secret == "" {
-		uc.log.Log(log.LevelError, "JWT_ACCESS_SECRET environment variable is required")
+		uc.log.WithContext(ctx).Error("JWT_ACCESS_SECRET environment variable is required")
 		return 0, errors.New("JWT_ACCESS_SECRET environment variable is required")
 	}
 
@@ -222,13 +253,13 @@ func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (i
 	})
 
 	if err != nil {
-		uc.log.Log(log.LevelWarn, "Failed to parse access token, error: ", err)
+		uc.log.WithContext(ctx).Warnf("Failed to parse access token, error: %v", err)
 		return 0, ErrInvalidToken
 	}
 
 	// 验证令牌是否有效
 	if !token.Valid {
-		uc.log.Log(log.LevelWarn, "Invalid access token provided")
+		uc.log.WithContext(ctx).Warn("Invalid access token provided")
 		return 0, ErrInvalidToken
 	}
 
@@ -236,20 +267,20 @@ func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (i
 	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok {
 		// 检查是否过期
 		if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
-			uc.log.Log(log.LevelWarn, "Access token has expired")
+			uc.log.WithContext(ctx).Warn("Access token has expired")
 			return 0, ErrTokenExpired
 		}
 
 		// 解析用户ID
 		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
 		if err != nil {
-			uc.log.Log(log.LevelWarn, "Failed to parse user id from access token")
+			uc.log.WithContext(ctx).Warn("Failed to parse user id from access token")
 			return 0, ErrInvalidToken
 		}
-		uc.log.Log(log.LevelInfo, "Token validation successful for user id: ", userID)
+		uc.log.WithContext(ctx).Infof("Token validation successful for user id: %d", userID)
 		return userID, nil
 	} else {
-		uc.log.Log(log.LevelWarn, "Failed to get claims from access token")
+		uc.log.WithContext(ctx).Warn("Failed to get claims from access token")
 		return 0, ErrInvalidToken
 	}
 }

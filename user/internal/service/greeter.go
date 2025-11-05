@@ -38,7 +38,7 @@ func (s *GreeterService) SayHello(ctx context.Context, in *v1.HelloRequest) (*v1
 
 	// 添加开始事件
 	tracing.AddSpanEvent(ctx, "operation.started", map[string]interface{}{
-		"timestamp": time.Now().Unix(),
+		"timestamp":  time.Now().Unix(),
 		"input_name": in.Name,
 	})
 
@@ -50,7 +50,7 @@ func (s *GreeterService) SayHello(ctx context.Context, in *v1.HelloRequest) (*v1
 	if err != nil {
 		// 记录错误事件
 		tracing.AddSpanEvent(ctx, "business.error", map[string]interface{}{
-			"error": err.Error(),
+			"error":     err.Error(),
 			"operation": "create_greeter",
 		})
 		span.SetAttributes(attribute.String("error", err.Error()))
@@ -59,7 +59,7 @@ func (s *GreeterService) SayHello(ctx context.Context, in *v1.HelloRequest) (*v1
 
 	// 添加成功事件
 	tracing.AddSpanEvent(ctx, "business.success", map[string]interface{}{
-		"result_message": "Hello " + g.Hello,
+		"result_message":     "Hello " + g.Hello,
 		"processing_time_ms": 50,
 	})
 

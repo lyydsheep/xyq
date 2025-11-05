@@ -10,32 +10,40 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"user/internal/pkg/tracing"
 )
 
 // ExtractUserID 从 HTTP 请求上下文中提取用户ID（由Nginx JWT校验后设置）
 func ExtractUserID(ctx context.Context, logger *log.Helper) (int64, error) {
+	ctx, span := tracing.StartSpan(ctx, "Service.ExtractUserID")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "extract_user_id",
+	})
+
 	// 从 HTTP 请求中获取用户ID（由Nginx JWT校验后设置）
 	req, ok := http.RequestFromServerContext(ctx)
 	if !ok {
-		logger.Log(log.LevelWarn, "Failed to get request from context")
+		logger.WithContext(ctx).Warn("Failed to get request from context")
 		return 0, biz.ErrInvalidToken
 	}
 
 	// 从 X-User-ID 头获取用户ID（由Nginx设置）
 	userIDStr := req.Header.Get("X-User-ID")
 	if userIDStr == "" {
-		logger.Log(log.LevelWarn, "No X-User-ID header provided")
+		logger.WithContext(ctx).Warn("No X-User-ID header provided")
 		return 0, biz.ErrInvalidToken
 	}
 
 	// 解析用户ID
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
-		logger.Log(log.LevelWarn, "Invalid X-User-ID format: ", userIDStr)
+		logger.WithContext(ctx).Warnf("Invalid X-User-ID format: %s", userIDStr)
 		return 0, biz.ErrInvalidToken
 	}
 
-	logger.Log(log.LevelInfo, "User extracted from header, userID: ", userID)
+	logger.WithContext(ctx).Infof("User extracted from header, userID: %d", userID)
 	return userID, nil
 }
 
@@ -57,22 +65,28 @@ func NewUserService(userUsecase *biz.UserUsecase, logger log.Logger) *UserServic
 
 // GetCurrentUser 获取当前用户资料
 func (s *UserService) GetCurrentUser(ctx context.Context, req *v1.GetCurrentUserRequest) (*v1.GetCurrentUserResponse, error) {
-	s.logger.Log(log.LevelInfo, "Received GetCurrentUser request")
+	ctx, span := tracing.StartSpan(ctx, "UserService.GetCurrentUser")
+	defer span.End()
 
-	// 提取并验证用户ID
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "get_current_user",
+	})
+
+	s.logger.WithContext(ctx).Info("Received GetCurrentUser request")
+
 	userID, err := ExtractUserID(ctx, s.logger)
 	if err != nil {
-		s.logger.Log(log.LevelError, "GetCurrentUser authentication failed: ", err)
+		s.logger.WithContext(ctx).Errorf("GetCurrentUser authentication failed: %v", err)
 		return &v1.GetCurrentUserResponse{}, nil
 	}
 
-	// 获取用户信息
 	user, err := s.userUsecase.GetUserByID(ctx, userID)
 	if err != nil {
-		s.logger.Log(log.LevelError, "GetCurrentUser failed: ", err)
+		s.logger.WithContext(ctx).Errorf("GetCurrentUser failed: %v", err)
 		return &v1.GetCurrentUserResponse{}, nil
 	}
 
+	s.logger.WithContext(ctx).Infof("Successfully retrieved current user with id: %d", user.ID)
 	return &v1.GetCurrentUserResponse{
 		Id:        user.ID,
 		Email:     user.Email,
@@ -86,35 +100,39 @@ func (s *UserService) GetCurrentUser(ctx context.Context, req *v1.GetCurrentUser
 
 // UpdateCurrentUser 更新当前用户资料
 func (s *UserService) UpdateCurrentUser(ctx context.Context, req *v1.UpdateCurrentUserRequest) (*v1.UpdateCurrentUserResponse, error) {
-	s.logger.Log(log.LevelInfo, "Received UpdateCurrentUser request")
+	ctx, span := tracing.StartSpan(ctx, "UserService.UpdateCurrentUser")
+	defer span.End()
 
-	// 提取并验证用户ID
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "update_current_user",
+	})
+
+	s.logger.WithContext(ctx).Info("Received UpdateCurrentUser request")
+
 	userID, err := ExtractUserID(ctx, s.logger)
 	if err != nil {
-		s.logger.Log(log.LevelError, "UpdateCurrentUser authentication failed: ", err)
+		s.logger.WithContext(ctx).Errorf("UpdateCurrentUser authentication failed: %v", err)
 		return &v1.UpdateCurrentUserResponse{}, nil
 	}
 
-	// 构建更新请求
 	updateReq := &biz.UpdateUserRequest{
 		Nickname:  &req.Nickname,
 		AvatarURL: &req.AvatarUrl,
 	}
 
-	// 调用业务逻辑更新用户信息
 	err = s.userUsecase.UpdateUser(ctx, userID, updateReq)
 	if err != nil {
-		s.logger.Log(log.LevelError, "UpdateCurrentUser failed: ", err)
+		s.logger.WithContext(ctx).Errorf("UpdateCurrentUser failed: %v", err)
 		return &v1.UpdateCurrentUserResponse{}, nil
 	}
 
-	// 获取更新后的用户信息
 	user, err := s.userUsecase.GetUserByID(ctx, userID)
 	if err != nil {
-		s.logger.Log(log.LevelError, "Failed to get updated user info: ", err)
+		s.logger.WithContext(ctx).Errorf("Failed to get updated user info: %v", err)
 		return &v1.UpdateCurrentUserResponse{}, nil
 	}
 
+	s.logger.WithContext(ctx).Infof("Successfully updated current user with id: %d", user.ID)
 	return &v1.UpdateCurrentUserResponse{
 		Id:        user.ID,
 		Email:     user.Email,

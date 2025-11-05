@@ -6,6 +6,7 @@ import (
 	"user/internal/biz"
 
 	"gorm.io/gorm"
+	"user/internal/pkg/tracing"
 )
 
 // userPointRepository 用户点数数据访问实现
@@ -20,24 +21,40 @@ func NewUserPointRepository(db *gorm.DB, logger log.Logger) biz.UserPointReposit
 }
 
 func (r *userPointRepository) Create(ctx context.Context, userPoint *biz.UserPoint) error {
-	r.logger.Log(log.LevelInfo, "Creating user point for user_id: ", userPoint.UserID)
+	ctx, span := tracing.StartSpan(ctx, "UserPointRepository.Create")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"user_id": userPoint.UserID,
+	})
+
+	r.logger.WithContext(ctx).Infof("Creating user point for user_id: %d", userPoint.UserID)
 	err := r.db.WithContext(ctx).Create(userPoint).Error
 	if err != nil {
-		r.logger.Log(log.LevelError, "Failed to create user point for user_id: ", userPoint.UserID, ", error: ", err)
+		r.logger.WithContext(ctx).Errorf("Failed to create user point for user_id: %d, error: %v", userPoint.UserID, err)
 		return err
 	}
-	r.logger.Log(log.LevelInfo, "Successfully created user point with id: ", userPoint.ID, " for user_id: ", userPoint.UserID)
+
+	r.logger.WithContext(ctx).Infof("Successfully created user point with id: %d for user_id: %d", userPoint.ID, userPoint.UserID)
 	return nil
 }
 
 func (r *userPointRepository) GetByUserID(ctx context.Context, userID int64) (*biz.UserPoint, error) {
-	r.logger.Log(log.LevelInfo, "Getting user point for user_id: ", userID)
+	ctx, span := tracing.StartSpan(ctx, "UserPointRepository.GetByUserID")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"user_id": userID,
+	})
+
+	r.logger.WithContext(ctx).Infof("Getting user point for user_id: %d", userID)
 	var p biz.UserPoint
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&p).Error
 	if err != nil {
-		r.logger.Log(log.LevelError, "Failed to get user point for user_id: ", userID, ", error: ", err)
+		r.logger.WithContext(ctx).Errorf("Failed to get user point for user_id: %d, error: %v", userID, err)
 		return nil, err
 	}
-	r.logger.Log(log.LevelInfo, "Successfully retrieved user point with id: ", p.ID, " for user_id: ", userID)
+
+	r.logger.WithContext(ctx).Infof("Successfully retrieved user point with id: %d for user_id: %d", p.ID, userID)
 	return &p, nil
 }

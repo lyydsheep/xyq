@@ -17,6 +17,7 @@ import (
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"user/internal/pkg/tracing"
 )
 
 var (
@@ -118,21 +119,29 @@ var ErrTooManyRequests = errors.New("too many requests, please try again later")
 
 // SendRegisterCode 发送注册验证码
 func (uc *UserUsecase) SendRegisterCode(ctx context.Context, email string) error {
-	uc.log.Log(log.LevelInfo, "Sending registration code to email: ", email)
+	ctx, span := tracing.StartSpan(ctx, "UserUsecase.SendRegisterCode")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "send_register_code",
+		"email": email,
+	})
+
+	uc.log.WithContext(ctx).Infof("Sending registration code to email: %s", email)
 
 	// 验证邮箱格式
 	if email == "" {
-		uc.log.Log(log.LevelWarn, "Empty email provided")
+		uc.log.WithContext(ctx).Warn("Empty email provided")
 		return errors.New("email is required")
 	}
 
 	// 检查邮箱是否已注册
 	_, err := uc.userRepo.GetByEmail(ctx, email)
 	if err == nil {
-		uc.log.Log(log.LevelInfo, "Email already registered: ", email)
+		uc.log.WithContext(ctx).Infof("Email already registered: %s", email)
 		return ErrEmailAlreadyExists
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		uc.log.Log(log.LevelError, "Database error when checking email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Database error when checking email: %s, error: %v", email, err)
 		return err
 	}
 
@@ -140,11 +149,11 @@ func (uc *UserUsecase) SendRegisterCode(ctx context.Context, email string) error
 	// 这可以防止并发请求重复发送验证码
 	ok, err := uc.codeRepo.CheckAndSetSendRateLimit(ctx, email, 60*time.Second)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to check rate limit for email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to check rate limit for email: %s, error: %v", email, err)
 		return err
 	}
 	if !ok {
-		uc.log.Log(log.LevelWarn, "Send verification code too frequently for email: ", email)
+		uc.log.WithContext(ctx).Warnf("Send verification code too frequently for email: %s", email)
 		return ErrTooManyRequests
 	}
 
@@ -155,66 +164,75 @@ func (uc *UserUsecase) SendRegisterCode(ctx context.Context, email string) error
 	// 存储验证码
 	err = uc.codeRepo.StoreVerificationCode(ctx, email, code, expiresAt)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to store verification code for email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to store verification code for email: %s, error: %v", email, err)
 		return err
 	}
 
 	// 发送邮件验证码
 	err = uc.sendVerificationEmail(ctx, email, code)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to send verification email to: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to send verification email to: %s, error: %v", email, err)
 		// 即使邮件发送失败，也不删除验证码，用户可能需要重新发送
 		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
-	uc.log.Log(log.LevelInfo, "Verification code sent successfully to: ", email)
+	uc.log.WithContext(ctx).Infof("Verification code sent successfully to: %s", email)
 	return nil
 }
 
 // Register 用户注册
 func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nickname string) (*User, error) {
-	uc.log.Log(log.LevelInfo, "Registering user with email: ", email)
+	ctx, span := tracing.StartSpan(ctx, "UserUsecase.Register")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "register",
+		"email": email,
+		"nickname": nickname,
+	})
+
+	uc.log.WithContext(ctx).Infof("Registering user with email: %s", email)
 
 	// 参数验证
 	if email == "" || password == "" || code == "" {
-		uc.log.Log(log.LevelWarn, "Missing required fields for registration")
+		uc.log.WithContext(ctx).Warn("Missing required fields for registration")
 		return nil, errors.New("email, password and code are required")
 	}
 
 	// 验证验证码
 	storedCode, err := uc.codeRepo.GetVerificationCode(ctx, email)
 	if err != nil {
-		uc.log.Log(log.LevelWarn, "Failed to get verification code for email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Warnf("Failed to get verification code for email: %s, error: %v", email, err)
 		return nil, ErrInvalidVerificationCode
 	}
 
 	if storedCode.Code != code {
-		uc.log.Log(log.LevelWarn, "Invalid verification code for email: ", email)
+		uc.log.WithContext(ctx).Warnf("Invalid verification code for email: %s", email)
 		return nil, ErrInvalidVerificationCode
 	}
 
 	if time.Now().After(storedCode.ExpiresAt) {
-		uc.log.Log(log.LevelWarn, "Verification code expired for email: ", email)
+		uc.log.WithContext(ctx).Warnf("Verification code expired for email: %s", email)
 		return nil, ErrVerificationCodeExpired
 	}
 
 	// 密码强度验证
 	if len(password) < 6 {
-		uc.log.Log(log.LevelWarn, "Password too short for email: ", email)
+		uc.log.WithContext(ctx).Warnf("Password too short for email: %s", email)
 		return nil, errors.New("password must be at least 6 characters long")
 	}
 
 	// 删除验证码
 	err = uc.codeRepo.DeleteVerificationCode(ctx, email)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to delete verification code for email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to delete verification code for email: %s, error: %v", email, err)
 		// 不返回错误，因为用户已经通过验证
 	}
 
 	// 密码哈希
 	hashedPassword, err := hashPassword(password)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to hash password for email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to hash password for email: %s, error: %v", email, err)
 		return nil, err
 	}
 
@@ -235,27 +253,35 @@ func (uc *UserUsecase) Register(ctx context.Context, email, password, code, nick
 	if err != nil {
 		// 检查是否是唯一约束错误（邮箱已存在）
 		if isUniqueConstraintError(err) {
-			uc.log.Log(log.LevelInfo, "Email already registered during registration: ", email)
+			uc.log.WithContext(ctx).Infof("Email already registered during registration: %s", email)
 			return nil, ErrEmailAlreadyExists
 		}
-		uc.log.Log(log.LevelError, "Failed to create user with email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to create user with email: %s, error: %v", email, err)
 		return nil, err
 	}
 
 	// 清空密码哈希，不返回给调用方
 	user.PasswordHash = ""
 
-	uc.log.Log(log.LevelInfo, "Successfully registered user with id: ", user.ID, ", email: ", email)
+	uc.log.WithContext(ctx).Infof("Successfully registered user with id: %d, email: %s", user.ID, email)
 	return user, nil
 }
 
 // Login 用户登录
 func (uc *UserUsecase) Login(ctx context.Context, email, password string) (*TokenPair, error) {
-	uc.log.Log(log.LevelInfo, "User login attempt with email: ", email)
+	ctx, span := tracing.StartSpan(ctx, "UserUsecase.Login")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "login",
+		"email": email,
+	})
+
+	uc.log.WithContext(ctx).Infof("User login attempt with email: %s", email)
 
 	// 参数验证
 	if email == "" || password == "" {
-		uc.log.Log(log.LevelWarn, "Missing email or password for login")
+		uc.log.WithContext(ctx).Warn("Missing email or password for login")
 		return nil, errors.New("email and password are required")
 	}
 
@@ -263,29 +289,29 @@ func (uc *UserUsecase) Login(ctx context.Context, email, password string) (*Toke
 	user, err := uc.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			uc.log.Log(log.LevelWarn, "User not found with email: ", email)
+			uc.log.WithContext(ctx).Warnf("User not found with email: %s", email)
 			return nil, ErrInvalidCredentials // 为了安全，不暴露用户是否存在
 		}
-		uc.log.Log(log.LevelError, "Database error when getting user with email: ", email, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Database error when getting user with email: %s, error: %v", email, err)
 		return nil, err
 	}
 
 	// 验证密码
 	if !checkPasswordHash(password, user.PasswordHash) {
-		uc.log.Log(log.LevelWarn, "Invalid password for user with email: ", email)
+		uc.log.WithContext(ctx).Warnf("Invalid password for user with email: %s", email)
 		return nil, ErrInvalidCredentials
 	}
 
 	// 生成令牌
 	accessToken, accessExpiresIn, err := generateAccessToken(user.ID)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to generate access token for user id: ", user.ID, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to generate access token for user id: %d, error: %v", user.ID, err)
 		return nil, err
 	}
 
 	refreshToken, refreshExpiresIn, err := generateRefreshToken(user.ID)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to generate refresh token for user id: ", user.ID, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to generate refresh token for user id: %d, error: %v", user.ID, err)
 		return nil, err
 	}
 
@@ -294,11 +320,11 @@ func (uc *UserUsecase) Login(ctx context.Context, email, password string) (*Toke
 
 	err = uc.authRepo.StoreRefreshToken(ctx, user.ID, refreshToken, refreshTokenExpiresAt)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to store refresh token for user id: ", user.ID, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to store refresh token for user id: %d, error: %v", user.ID, err)
 		return nil, err
 	}
 
-	uc.log.Log(log.LevelInfo, "User login successful for user id: ", user.ID, ", email: ", email)
+	uc.log.WithContext(ctx).Infof("User login successful for user id: %d, email: %s", user.ID, email)
 	return &TokenPair{
 		AccessToken:      accessToken,
 		AccessExpiresIn:  accessExpiresIn,
@@ -346,17 +372,26 @@ func checkPasswordHash(password, hash string) bool {
 
 // sendVerificationEmail 发送验证码邮件
 func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code string) error {
+	ctx, span := tracing.StartSpan(ctx, "UserUsecase.sendVerificationEmail")
+	defer span.End()
+
+	tracing.AddSpanTags(ctx, map[string]interface{}{
+		"operation": "send_verification_email",
+		"email": email,
+		"code_length": len(code),
+	})
+
 	// 1. 从环境变量获取 API Key
 	apiKey := os.Getenv("SENDGRID_API_KEY")
 	if apiKey == "" {
-		uc.log.Log(log.LevelError, "SENDGRID_API_KEY environment variable is not set")
+		uc.log.WithContext(ctx).Error("SENDGRID_API_KEY environment variable is not set")
 		return errors.New("SENDGRID_API_KEY environment variable is required")
 	}
 
 	// 检查是否为测试环境（API key以"test-"开头）
 	isTestMode := strings.HasPrefix(apiKey, "test-")
 	if isTestMode {
-		uc.log.Log(log.LevelInfo, "Test mode: skipping actual email send, email: ", email, ", code: ", code)
+		uc.log.WithContext(ctx).Infof("Test mode: skipping actual email send, email: %s, code: %s", email, code)
 		return nil
 	}
 
@@ -466,62 +501,62 @@ func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code st
 	client := sendgrid.NewSendClient(apiKey)
 
 	// 10. 发送邮件
-	uc.log.Log(log.LevelInfo, "Sending verification email to: ", email)
+	uc.log.WithContext(ctx).Infof("Sending verification email to: %s", email)
 	response, err := client.Send(message)
 
 	// 11. 处理响应和错误
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to send email: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to send email: %v", err)
 		return fmt.Errorf("failed to send verification email: %w", err)
 	}
 
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
-		uc.log.Log(log.LevelInfo, "Verification email sent successfully to: ", email, ", status: ", response.StatusCode)
+		uc.log.WithContext(ctx).Infof("Verification email sent successfully to: %s, status: %d", email, response.StatusCode)
 		return nil
 	} else {
-		uc.log.Log(log.LevelError, "Failed to send email, status: ", response.StatusCode, ", body: ", response.Body)
+		uc.log.WithContext(ctx).Errorf("Failed to send email, status: %d, body: %s", response.StatusCode, response.Body)
 		return fmt.Errorf("failed to send verification email: status %d", response.StatusCode)
 	}
 }
 
 // UpdateUser 更新用户信息
 func (uc *UserUsecase) UpdateUser(ctx context.Context, id int64, req *UpdateUserRequest) error {
-	uc.log.Log(log.LevelInfo, "Updating user with id: ", id)
+	uc.log.WithContext(ctx).Infof("Updating user with id: %d", id)
 
 	// 参数验证
 	if req == nil {
-		uc.log.Log(log.LevelWarn, "UpdateUser request is nil")
+		uc.log.WithContext(ctx).Warn("UpdateUser request is nil")
 		return errors.New("update request is required")
 	}
 
 	// 更新用户信息
 	err := uc.userRepo.Update(ctx, id, req)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to update user with id: ", id, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to update user with id: %d, error: %v", id, err)
 		return err
 	}
 
-	uc.log.Log(log.LevelInfo, "Successfully updated user with id: ", id)
+	uc.log.WithContext(ctx).Infof("Successfully updated user with id: %d", id)
 	return nil
 }
 
 // GetUserByID 根据ID获取用户信息
 func (uc *UserUsecase) GetUserByID(ctx context.Context, id int64) (*User, error) {
-	uc.log.Log(log.LevelInfo, "Getting user with id: ", id)
+	uc.log.WithContext(ctx).Infof("Getting user with id: %d", id)
 
 	// 参数验证
 	if id <= 0 {
-		uc.log.Log(log.LevelWarn, "Invalid user id: ", id)
+		uc.log.WithContext(ctx).Warnf("Invalid user id: %d", id)
 		return nil, errors.New("invalid user id")
 	}
 
 	// 获取用户信息
 	user, err := uc.userRepo.GetByID(ctx, id)
 	if err != nil {
-		uc.log.Log(log.LevelError, "Failed to get user with id: ", id, ", error: ", err)
+		uc.log.WithContext(ctx).Errorf("Failed to get user with id: %d, error: %v", id, err)
 		return nil, err
 	}
 
-	uc.log.Log(log.LevelInfo, "Successfully got user with id: ", id)
+	uc.log.WithContext(ctx).Infof("Successfully got user with id: %d", id)
 	return user, nil
 }
