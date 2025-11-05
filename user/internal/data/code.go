@@ -132,10 +132,16 @@ func (r *codeRepository) CheckAndSetSendRateLimit(ctx context.Context, email str
 	r.logger.WithContext(ctx).Infof("Checking send rate limit for email: %s", email)
 
 	key := fmt.Sprintf("rate_limit:send_code:%s", email)
-	err := r.data.RedisClient().SetNX(ctx, key, time.Now().Unix(), duration).Err()
+	// SetNX 返回一个 bool 值表示是否成功设置，我们需要检查这个值
+	success, err := r.data.RedisClient().SetNX(ctx, key, time.Now().Unix(), duration).Result()
 	if err != nil {
 		r.logger.WithContext(ctx).Errorf("Failed to set rate limit for email: %s, error: %v", email, err)
 		return false, err
+	}
+
+	if !success {
+		r.logger.WithContext(ctx).Warnf("Rate limit exceeded for email: %s", email)
+		return false, nil
 	}
 
 	r.logger.WithContext(ctx).Infof("Rate limit set successfully for email: %s", email)
