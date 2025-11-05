@@ -117,7 +117,7 @@ func (r *codeRepository) CheckAndSetSendRateLimit(ctx context.Context, email str
 
 	// 使用 SETNX 命令：仅当键不存在时才设置
 	// 这确保了在指定时间内只能发送一次验证码
-	err := r.data.RedisClient().Set(ctx, key, time.Now().Unix(), duration).Err()
+	err := r.data.RedisClient().SetNX(ctx, key, time.Now().Unix(), duration).Err()
 	if err != nil {
 		r.logger.Log(log.LevelError, "Failed to set rate limit for email: ", email, ", error: ", err)
 		return false, err
