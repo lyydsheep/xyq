@@ -16,3 +16,8 @@ data:
     addr: 127.0.0.1:34701
     read_timeout: 0.2s
     write_timeout: 0.2s
+trace:
+  endpoint: http://localhost:14268/api/traces
+  service_name: user-service
+  sampler: 1.0
+  batcher: jaeger

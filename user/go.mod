@@ -41,7 +41,9 @@ require (
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
+	go.opentelemetry.io/otel/exporters/jaeger v1.17.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	golang.org/x/net v0.45.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect

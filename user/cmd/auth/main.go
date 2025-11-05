@@ -1,18 +1,21 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
 	"user/internal/conf"
+	"user/internal/pkg/tracing"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/middleware/tracing"
+	kratostracing "github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	_ "go.uber.org/automaxprocs"
 )
@@ -55,8 +58,8 @@ func main() {
 		"service.id", id,
 		"service.name", Name,
 		"service.version", Version,
-		"trace.id", tracing.TraceID(),
-		"span.id", tracing.SpanID(),
+		"trace.id", kratostracing.TraceID(),
+		"span.id", kratostracing.SpanID(),
 	)
 	c := config.New(
 		config.WithSource(
@@ -72,6 +75,22 @@ func main() {
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
+	}
+
+	// Initialize tracing
+	var tp *sdktrace.TracerProvider
+	if bc.Trace != nil {
+		var err error
+		tp, err = tracing.NewProvider(
+			bc.Trace.Endpoint,
+			bc.Trace.ServiceName,
+			bc.Trace.Sampler,
+		)
+		if err != nil {
+			log.NewStdLogger(os.Stderr).Log(log.LevelError, "msg", "failed to initialize tracing", "err", err)
+		} else {
+			defer tracing.Shutdown(context.Background(), tp)
+		}
 	}
 
 	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
