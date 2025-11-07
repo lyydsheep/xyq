@@ -87,11 +87,11 @@ func TestPointTransactionRepository_Create(t *testing.T) {
 						nil,
 						"购买书籍", // description
 					).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 				mock.ExpectRollback()
 			},
 			wantErr:   true,
-			expectErr: "database connection error",
+			expectErr: "database connection error_reason",
 		},
 	}
 
@@ -210,12 +210,12 @@ func TestPointTransactionRepository_GetByUserID(t *testing.T) {
 				// 模拟总数查询失败
 				mock.ExpectQuery("SELECT count\\(\\*\\) FROM `point_transaction` WHERE user_id = \\?").
 					WithArgs(1).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 			},
 			wantTxns:  nil,
 			wantTotal: 0,
 			wantErr:   true,
-			expectErr: "database connection error",
+			expectErr: "database connection error_reason",
 		},
 		{
 			name:     "查询分页数据失败",
@@ -231,12 +231,12 @@ func TestPointTransactionRepository_GetByUserID(t *testing.T) {
 				// 模拟分页查询失败
 				mock.ExpectQuery("SELECT \\* FROM `point_transaction` WHERE user_id = \\? ORDER BY created_at DESC LIMIT \\?").
 					WithArgs(1, 10).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 			},
 			wantTxns:  nil,
 			wantTotal: 0,
 			wantErr:   true,
-			expectErr: "database connection error",
+			expectErr: "database connection error_reason",
 		},
 	}
 
@@ -323,11 +323,11 @@ func TestPointTransactionRepository_GetByID(t *testing.T) {
 			mockFn: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT \\* FROM `point_transaction` WHERE id = \\? ORDER BY `point_transaction`.`id` LIMIT \\?").
 					WithArgs(2, 1).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 			},
 			wantTxn:   nil,
 			wantErr:   true,
-			expectErr: "database connection error",
+			expectErr: "database connection error_reason",
 		},
 	}
 

@@ -39,7 +39,7 @@ func (r *codeRepository) StoreVerificationCode(ctx context.Context, email, code 
 	defer span.End()
 
 	tracing.AddSpanTags(ctx, map[string]interface{}{
-		"email": email,
+		"email":       email,
 		"code_length": len(code),
 	})
 
@@ -50,7 +50,7 @@ func (r *codeRepository) StoreVerificationCode(ctx context.Context, email, code 
 
 	err := r.data.RedisClient().Set(ctx, key, code, expiration).Err()
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to store verification code for email: %s, error: %v", email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to store verification code for email: %s, error_reason: %v", email, err)
 		return err
 	}
 
@@ -76,13 +76,13 @@ func (r *codeRepository) GetVerificationCode(ctx context.Context, email string) 
 			r.logger.WithContext(ctx).Warnf("Verification code not found or expired for email: %s", email)
 			return nil, fmt.Errorf("验证码不存在或已过期")
 		}
-		r.logger.WithContext(ctx).Errorf("Failed to get verification code for email: %s, error: %v", email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get verification code for email: %s, error_reason: %v", email, err)
 		return nil, err
 	}
 
 	ttl, err := r.data.RedisClient().TTL(ctx, key).Result()
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to get TTL for verification code of email: %s, error: %v", email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get TTL for verification code of email: %s, error_reason: %v", email, err)
 		return nil, err
 	}
 
@@ -110,7 +110,7 @@ func (r *codeRepository) DeleteVerificationCode(ctx context.Context, email strin
 	key := fmt.Sprintf("verification_code:%s", email)
 	_, err := r.data.RedisClient().Del(ctx, key).Result()
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to delete verification code for email: %s, error: %v", email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to delete verification code for email: %s, error_reason: %v", email, err)
 		return err
 	}
 
@@ -125,7 +125,7 @@ func (r *codeRepository) CheckAndSetSendRateLimit(ctx context.Context, email str
 	defer span.End()
 
 	tracing.AddSpanTags(ctx, map[string]interface{}{
-		"email": email,
+		"email":            email,
 		"duration_seconds": duration.Seconds(),
 	})
 
@@ -135,7 +135,7 @@ func (r *codeRepository) CheckAndSetSendRateLimit(ctx context.Context, email str
 	// SetNX 返回一个 bool 值表示是否成功设置，我们需要检查这个值
 	success, err := r.data.RedisClient().SetNX(ctx, key, time.Now().Unix(), duration).Result()
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to set rate limit for email: %s, error: %v", email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to set rate limit for email: %s, error_reason: %v", email, err)
 		return false, err
 	}
 

@@ -47,7 +47,7 @@ api:
 	       $(API_PROTO_FILES)
 
 .PHONY: errors
-# generate error code
+# generate error_reason code
 errors:
 	protoc --proto_path=./api \
 	       --proto_path=./third_party \

@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/golang-jwt/jwt/v5"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/go-kratos/kratos/v2/log"
-	"github.com/golang-jwt/jwt/v5"
+	error_reason "user/api/error_reason"
 	"user/internal/pkg/tracing"
 )
 
@@ -72,7 +72,7 @@ func generateAccessToken(userID int64) (string, int32, error) {
 	// 从环境变量获取JWT访问令牌密钥
 	secret := os.Getenv("JWT_ACCESS_SECRET")
 	if secret == "" {
-		return "", 0, errors.New("JWT_ACCESS_SECRET environment variable is required")
+		return "", 0, error_reason.ErrorAuthDatabaseError("JWT访问令牌密钥未配置")
 	}
 
 	// 创建声明
@@ -104,7 +104,7 @@ func generateRefreshToken(userID int64) (string, int32, error) {
 	// 从环境变量获取JWT刷新令牌密钥
 	secret := os.Getenv("JWT_REFRESH_SECRET")
 	if secret == "" {
-		return "", 0, errors.New("JWT_REFRESH_SECRET environment variable is required")
+		return "", 0, error_reason.ErrorAuthDatabaseError("JWT刷新令牌密钥未配置")
 	}
 
 	// 创建声明
@@ -143,14 +143,14 @@ func (uc *AuthUsecase) RefreshToken(ctx context.Context, refreshToken string) (*
 	// 参数验证
 	if refreshToken == "" {
 		uc.log.WithContext(ctx).Warn("Empty refresh token provided")
-		return nil, ErrInvalidToken
+		return nil, error_reason.ErrorUserRefreshTokenInvalid("刷新令牌不能为空")
 	}
 
 	// 验证刷新令牌
 	userID, err := uc.authRepo.GetUserIDByRefreshToken(ctx, refreshToken)
 	if err != nil {
 		uc.log.WithContext(ctx).Warn("Invalid refresh token provided")
-		return nil, ErrInvalidToken
+		return nil, error_reason.ErrorUserRefreshTokenInvalid("刷新令牌无效")
 	}
 
 	// 使用事务确保令牌刷新的原子性
@@ -162,22 +162,22 @@ func (uc *AuthUsecase) refreshTokenInTransaction(ctx context.Context, userID int
 	// 生成新的令牌对
 	accessToken, accessExpiresIn, err := generateAccessToken(userID)
 	if err != nil {
-		uc.log.WithContext(ctx).Errorf("Failed to generate access token during refresh for user id: %d, error: %v", userID, err)
-		return nil, err
+		uc.log.WithContext(ctx).Errorf("Failed to generate access token during refresh for user id: %d, error_reason: %v", userID, err)
+		return nil, error_reason.ErrorUserInternalError("访问令牌生成失败")
 	}
 
 	newRefreshToken, refreshExpiresIn, err := generateRefreshToken(userID)
 	if err != nil {
-		uc.log.WithContext(ctx).Errorf("Failed to generate refresh token during refresh for user id: %d, error: %v", userID, err)
-		return nil, err
+		uc.log.WithContext(ctx).Errorf("Failed to generate refresh token during refresh for user id: %d, error_reason: %v", userID, err)
+		return nil, error_reason.ErrorUserInternalError("刷新令牌生成失败")
 	}
 
 	// 使用原子操作刷新令牌
 	refreshTokenExpiresAt := time.Now().Add(time.Duration(refreshExpiresIn) * time.Second)
 	err = uc.authRepo.RefreshTokenAtomically(ctx, userID, oldRefreshToken, newRefreshToken, refreshTokenExpiresAt)
 	if err != nil {
-		uc.log.WithContext(ctx).Errorf("Failed to refresh token atomically for user id: %d, error: %v", userID, err)
-		return nil, err
+		uc.log.WithContext(ctx).Errorf("Failed to refresh token atomically for user id: %d, error_reason: %v", userID, err)
+		return nil, error_reason.ErrorUserDatabaseError("令牌刷新失败")
 	}
 
 	uc.log.WithContext(ctx).Infof("Token refresh successful for user id: %d", userID)
@@ -210,14 +210,14 @@ func (uc *AuthUsecase) Logout(ctx context.Context, refreshToken string) error {
 	// 参数验证
 	if refreshToken == "" {
 		uc.log.WithContext(ctx).Warn("Empty refresh token provided for logout")
-		return errors.New("refresh token is required")
+		return error_reason.ErrorUserRefreshTokenInvalid("刷新令牌不能为空")
 	}
 
 	// 删除刷新令牌
 	err := uc.authRepo.DeleteRefreshToken(ctx, refreshToken)
 	if err != nil {
-		uc.log.WithContext(ctx).Errorf("Failed to delete refresh token during logout, error: %v", err)
-		return err
+		uc.log.WithContext(ctx).Errorf("Failed to delete refresh token during logout, error_reason: %v", err)
+		return error_reason.ErrorUserDatabaseError("令牌删除失败")
 	}
 
 	uc.log.WithContext(ctx).Info("User logout successful")
@@ -237,14 +237,14 @@ func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (i
 	// 参数验证
 	if accessToken == "" {
 		uc.log.WithContext(ctx).Warn("Empty access token provided for validation")
-		return 0, ErrInvalidToken
+		return 0, error_reason.ErrorUserInvalidToken("访问令牌不能为空")
 	}
 
 	// 从环境变量获取JWT访问令牌密钥
 	secret := os.Getenv("JWT_ACCESS_SECRET")
 	if secret == "" {
 		uc.log.WithContext(ctx).Error("JWT_ACCESS_SECRET environment variable is required")
-		return 0, errors.New("JWT_ACCESS_SECRET environment variable is required")
+		return 0, error_reason.ErrorAuthDatabaseError("JWT访问令牌密钥未配置")
 	}
 
 	// 解析和验证JWT令牌
@@ -253,14 +253,14 @@ func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (i
 	})
 
 	if err != nil {
-		uc.log.WithContext(ctx).Warnf("Failed to parse access token, error: %v", err)
-		return 0, ErrInvalidToken
+		uc.log.WithContext(ctx).Warnf("Failed to parse access token, error_reason: %v", err)
+		return 0, error_reason.ErrorUserInvalidToken("访问令牌格式无效")
 	}
 
 	// 验证令牌是否有效
 	if !token.Valid {
 		uc.log.WithContext(ctx).Warn("Invalid access token provided")
-		return 0, ErrInvalidToken
+		return 0, error_reason.ErrorUserInvalidToken("访问令牌无效")
 	}
 
 	// 获取声明
@@ -268,19 +268,19 @@ func (uc *AuthUsecase) ValidateToken(ctx context.Context, accessToken string) (i
 		// 检查是否过期
 		if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
 			uc.log.WithContext(ctx).Warn("Access token has expired")
-			return 0, ErrTokenExpired
+			return 0, error_reason.ErrorUserTokenExpired("访问令牌已过期")
 		}
 
 		// 解析用户ID
 		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
 		if err != nil {
 			uc.log.WithContext(ctx).Warn("Failed to parse user id from access token")
-			return 0, ErrInvalidToken
+			return 0, error_reason.ErrorUserInvalidToken("访问令牌用户信息无效")
 		}
 		uc.log.WithContext(ctx).Infof("Token validation successful for user id: %d", userID)
 		return userID, nil
 	} else {
 		uc.log.WithContext(ctx).Warn("Failed to get claims from access token")
-		return 0, ErrInvalidToken
+		return 0, error_reason.ErrorUserInvalidToken("访问令牌格式无效")
 	}
 }

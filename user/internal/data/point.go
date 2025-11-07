@@ -31,7 +31,7 @@ func (r *userPointRepository) Create(ctx context.Context, userPoint *biz.UserPoi
 	r.logger.WithContext(ctx).Infof("Creating user point for user_id: %d", userPoint.UserID)
 	err := r.db.WithContext(ctx).Create(userPoint).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to create user point for user_id: %d, error: %v", userPoint.UserID, err)
+		r.logger.WithContext(ctx).Errorf("Failed to create user point for user_id: %d, error_reason: %v", userPoint.UserID, err)
 		return err
 	}
 
@@ -51,7 +51,7 @@ func (r *userPointRepository) GetByUserID(ctx context.Context, userID int64) (*b
 	var p biz.UserPoint
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&p).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to get user point for user_id: %d, error: %v", userID, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get user point for user_id: %d, error_reason: %v", userID, err)
 		return nil, err
 	}
 

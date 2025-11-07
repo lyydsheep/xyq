@@ -65,7 +65,7 @@ func MapErrorToHTTP(err error) (int, string, string) {
 	}
 
 	// 未知错误，返回500
-	return http.StatusInternalServerError, SYS_ERR_DB, "internal server error"
+	return http.StatusInternalServerError, SYS_ERR_DB, "internal server error_reason"
 }
 
 // ToErrorResponse 将错误转换为标准错误响应

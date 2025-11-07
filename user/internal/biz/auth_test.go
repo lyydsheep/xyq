@@ -61,11 +61,11 @@ func TestAuthUsecase_RefreshToken(t *testing.T) {
 		},
 		{
 			name:         "用户ID获取失败",
-			refreshToken: "error-token",
+			refreshToken: "error_reason-token",
 			setupMocks: func(authRepo *MockAuthRepository) {
 				// 模拟数据库错误
-				authRepo.On("GetUserIDByRefreshToken", mock.Anything, "error-token").
-					Return(int64(0), errors.New("database error"))
+				authRepo.On("GetUserIDByRefreshToken", mock.Anything, "error_reason-token").
+					Return(int64(0), errors.New("database error_reason"))
 			},
 			wantErr:     true,
 			expectedErr: ErrInvalidToken,
@@ -91,10 +91,10 @@ func TestAuthUsecase_RefreshToken(t *testing.T) {
 
 				// 模拟原子刷新失败
 				authRepo.On("RefreshTokenAtomically", mock.Anything, int64(123), "atomic-fail-token", mock.Anything, mock.Anything).
-					Return(errors.New("redis error"))
+					Return(errors.New("redis error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: errors.New("redis error"),
+			expectedErr: errors.New("redis error_reason"),
 		},
 	}
 
@@ -187,10 +187,10 @@ func TestAuthUsecase_Logout(t *testing.T) {
 			setupMocks: func(authRepo *MockAuthRepository) {
 				// 模拟删除失败
 				authRepo.On("DeleteRefreshToken", mock.Anything, "delete-fail-token").
-					Return(errors.New("redis error"))
+					Return(errors.New("redis error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: errors.New("redis error"),
+			expectedErr: errors.New("redis error_reason"),
 		},
 	}
 
@@ -247,11 +247,11 @@ func TestAuthUsecase_ValidateToken(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name         string
-		accessToken  string
-		setupMocks   func(*MockAuthRepository)
-		wantErr      bool
-		expectedErr  error
+		name           string
+		accessToken    string
+		setupMocks     func(*MockAuthRepository)
+		wantErr        bool
+		expectedErr    error
 		expectedUserID int64
 	}{
 		{
@@ -260,8 +260,8 @@ func TestAuthUsecase_ValidateToken(t *testing.T) {
 			setupMocks: func(authRepo *MockAuthRepository) {
 				// 不需要调用mock方法
 			},
-			wantErr:         false,
-			expectedUserID:  123,
+			wantErr:        false,
+			expectedUserID: 123,
 		},
 		{
 			name:        "访问令牌为空",
@@ -300,7 +300,7 @@ func TestAuthUsecase_ValidateToken(t *testing.T) {
 			expectedErr: ErrInvalidToken,
 		},
 		{
-			name:        "无效的用户ID",
+			name: "无效的用户ID",
 			accessToken: func() string {
 				// 创建一个包含无效用户ID的令牌
 				claims := &jwt.RegisteredClaims{

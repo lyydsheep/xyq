@@ -359,7 +359,7 @@ func TestUserRepository_Update(t *testing.T) {
 				mock.ExpectBegin()
 				mock.ExpectExec("UPDATE `user` SET `nickname`=\\?,`updated_at`=\\? WHERE id = \\?").
 					WithArgs("测试昵称", sqlmock.AnyArg(), 1).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 				mock.ExpectRollback()
 			},
 			wantErr: true,

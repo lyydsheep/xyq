@@ -43,10 +43,7 @@ func (s *AuthService) SendRegisterCode(ctx context.Context, req *v1.SendRegister
 	err := s.userUsecase.SendRegisterCode(ctx, req.Email)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("SendRegisterCode failed: %v", err)
-		return &v1.SendRegisterCodeResponse{
-			Success: false,
-			Message: err.Error(),
-		}, nil
+		return nil, err
 	}
 
 	s.logger.WithContext(ctx).Info("SendRegisterCode completed successfully")
@@ -72,11 +69,7 @@ func (s *AuthService) Register(ctx context.Context, req *v1.RegisterRequest) (*v
 	user, err := s.userUsecase.Register(ctx, req.Email, req.Password, req.Code, req.Nickname)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("Register failed: %v", err)
-		return &v1.RegisterResponse{
-			Id:       0,
-			Email:    "",
-			Nickname: "",
-		}, nil
+		return nil, err
 	}
 
 	s.logger.WithContext(ctx).Infof("Register completed successfully for user id: %d", user.ID)
@@ -102,12 +95,7 @@ func (s *AuthService) Login(ctx context.Context, req *v1.LoginRequest) (*v1.Logi
 	tokenPair, err := s.userUsecase.Login(ctx, req.Email, req.Password)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("Login failed: %v", err)
-		return &v1.LoginResponse{
-			AccessToken:      "",
-			AccessExpiresIn:  0,
-			RefreshToken:     "",
-			RefreshExpiresIn: 0,
-		}, nil
+		return nil, err
 	}
 
 	s.logger.WithContext(ctx).Info("Login completed successfully")
@@ -134,10 +122,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *v1.RefreshTokenRequ
 	tokenPair, err := s.authUsecase.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("RefreshToken failed: %v", err)
-		return &v1.RefreshTokenResponse{
-			AccessToken:     "",
-			AccessExpiresIn: 0,
-		}, nil
+		return nil, err
 	}
 
 	s.logger.WithContext(ctx).Info("RefreshToken completed successfully")
@@ -162,10 +147,7 @@ func (s *AuthService) Logout(ctx context.Context, req *v1.LogoutRequest) (*v1.Lo
 	err := s.authUsecase.Logout(ctx, req.RefreshToken)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("Logout failed: %v", err)
-		return &v1.LogoutResponse{
-			Success: false,
-			Message: err.Error(),
-		}, nil
+		return nil, err
 	}
 
 	s.logger.WithContext(ctx).Info("Logout completed successfully")

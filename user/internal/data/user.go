@@ -20,8 +20,8 @@ func (r *userRepository) Update(ctx context.Context, id int64, req *biz.UpdateUs
 	defer span.End()
 
 	tracing.AddSpanTags(ctx, map[string]interface{}{
-		"user_id": id,
-		"has_nickname": req.Nickname != nil,
+		"user_id":        id,
+		"has_nickname":   req.Nickname != nil,
 		"has_avatar_url": req.AvatarURL != nil,
 	})
 
@@ -45,7 +45,7 @@ func (r *userRepository) Update(ctx context.Context, id int64, req *biz.UpdateUs
 	err := r.db.WithContext(ctx).Model(&biz.User{}).Where("id = ?", id).Updates(updates).Error
 
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to update user with id: %d, error: %v", id, err)
+		r.logger.WithContext(ctx).Errorf("Failed to update user with id: %d, error_reason: %v", id, err)
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (r *userRepository) Create(ctx context.Context, user *biz.User) error {
 	r.logger.WithContext(ctx).Infof("Creating user with email: %s", user.Email)
 	err := r.db.WithContext(ctx).Create(user).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to create user with email: %s, error: %v", user.Email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to create user with email: %s, error_reason: %v", user.Email, err)
 		return err
 	}
 
@@ -89,7 +89,7 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*biz.User, erro
 	var u biz.User
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to get user with id: %d, error: %v", id, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get user with id: %d, error_reason: %v", id, err)
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*biz.Use
 	var u biz.User
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to get user with email: %s, error: %v", email, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get user with email: %s, error_reason: %v", email, err)
 		return nil, err
 	}
 

@@ -25,15 +25,15 @@ func (r *pointTransactionRepository) Create(ctx context.Context, transaction *bi
 	defer span.End()
 
 	tracing.AddSpanTags(ctx, map[string]interface{}{
-		"user_id": transaction.UserID,
+		"user_id":          transaction.UserID,
 		"transaction_type": transaction.Type,
-		"amount": transaction.Amount,
+		"amount":           transaction.Amount,
 	})
 
 	r.logger.WithContext(ctx).Infof("Creating point transaction for user_id: %d, type: %s, amount: %d", transaction.UserID, transaction.Type, transaction.Amount)
 	err := r.db.WithContext(ctx).Create(transaction).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to create point transaction for user_id: %d, error: %v", transaction.UserID, err)
+		r.logger.WithContext(ctx).Errorf("Failed to create point transaction for user_id: %d, error_reason: %v", transaction.UserID, err)
 		return err
 	}
 
@@ -46,8 +46,8 @@ func (r *pointTransactionRepository) GetByUserID(ctx context.Context, userID int
 	defer span.End()
 
 	tracing.AddSpanTags(ctx, map[string]interface{}{
-		"user_id": userID,
-		"page": page,
+		"user_id":   userID,
+		"page":      page,
 		"page_size": pageSize,
 	})
 
@@ -58,7 +58,7 @@ func (r *pointTransactionRepository) GetByUserID(ctx context.Context, userID int
 	offset := (page - 1) * pageSize
 
 	if err := r.db.WithContext(ctx).Model(&biz.PointTransaction{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to count point transactions for user_id: %d, error: %v", userID, err)
+		r.logger.WithContext(ctx).Errorf("Failed to count point transactions for user_id: %d, error_reason: %v", userID, err)
 		return nil, 0, err
 	}
 
@@ -69,7 +69,7 @@ func (r *pointTransactionRepository) GetByUserID(ctx context.Context, userID int
 		Find(&transactions).Error
 
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to get point transactions for user_id: %d, error: %v", userID, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get point transactions for user_id: %d, error_reason: %v", userID, err)
 		return nil, 0, err
 	}
 
@@ -89,7 +89,7 @@ func (r *pointTransactionRepository) GetByID(ctx context.Context, id int64) (*bi
 	var t biz.PointTransaction
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&t).Error
 	if err != nil {
-		r.logger.WithContext(ctx).Errorf("Failed to get point transaction with id: %d, error: %v", id, err)
+		r.logger.WithContext(ctx).Errorf("Failed to get point transaction with id: %d, error_reason: %v", id, err)
 		return nil, err
 	}
 

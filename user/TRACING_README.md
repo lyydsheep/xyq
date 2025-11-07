@@ -103,8 +103,8 @@ func (s *UserService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
     user, err := s.repo.GetUser(ctx, req.Id)
     if err != nil {
         // 添加错误事件
-        tracing.AddSpanEvent(ctx, "database.query.error", map[string]interface{}{
-            "error": err.Error(),
+        tracing.AddSpanEvent(ctx, "database.query.error_reason", map[string]interface{}{
+            "error_reason": err.Error(),
         })
         return nil, err
     }

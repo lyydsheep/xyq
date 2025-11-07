@@ -55,11 +55,11 @@ func TestUserPointRepository_Create(t *testing.T) {
 						100, // current_points
 						sqlmock.AnyArg(),
 					).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 				mock.ExpectRollback()
 			},
 			wantErr:   true,
-			expectErr: "database connection error",
+			expectErr: "database connection error_reason",
 		},
 	}
 
@@ -131,11 +131,11 @@ func TestUserPointRepository_GetByUserID(t *testing.T) {
 			mockFn: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT \\* FROM `user_point` WHERE user_id = \\? ORDER BY `user_point`.`id` LIMIT \\?").
 					WithArgs(2, 1).
-					WillReturnError(fmt.Errorf("database connection error"))
+					WillReturnError(fmt.Errorf("database connection error_reason"))
 			},
 			wantPoint: nil,
 			wantErr:   true,
-			expectErr: "database connection error",
+			expectErr: "database connection error_reason",
 		},
 	}
 

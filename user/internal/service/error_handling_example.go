@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"net/http"
-	error2 "user/api/error"
+	error2 "user/api/error_reason"
 	v1 "user/api/user/v1"
 )
 
@@ -15,16 +15,16 @@ func (h *UserServiceErrorHandler) GetCurrentUser(ctx context.Context, req *v1.Ge
 	// 模拟不同类型的错误情况
 
 	// 1. 用户未登录或Token无效
-	// return nil, v1.ErrorUserInvalidToken("用户未登录或Token无效")
+	// return nil, error_reason.ErrorUserInvalidToken("用户未登录或Token无效")
 
 	// 2. 用户不存在
-	// return nil, v1.ErrorUserNotFound("用户不存在")
+	// return nil, error_reason.ErrorUserNotFound("用户不存在")
 
 	// 3. 数据库错误
-	// return nil, v1.ErrorUserDatabaseError("数据库连接失败")
+	// return nil, error_reason.ErrorUserDatabaseError("数据库连接失败")
 
 	// 4. 服务暂时不可用
-	// return nil, v1.ErrorUserServiceUnavailable("用户服务维护中")
+	// return nil, error_reason.ErrorUserServiceUnavailable("用户服务维护中")
 
 	// 正常情况
 	return &v1.GetCurrentUserResponse{
@@ -40,13 +40,13 @@ func (h *UserServiceErrorHandler) UpdateCurrentUser(ctx context.Context, req *v1
 	// 模拟不同类型的错误情况
 
 	// 1. 昵称格式不正确
-	// return nil, v1.ErrorUserInvalidNickname("昵称格式不正确")
+	// return nil, error_reason.ErrorUserInvalidNickname("昵称格式不正确")
 
 	// 2. 昵称已被使用
-	// return nil, v1.ErrorUserNicknameAlreadyExists("该昵称已被使用")
+	// return nil, error_reason.ErrorUserNicknameAlreadyExists("该昵称已被使用")
 
 	// 3. 请求过于频繁
-	// return nil, v1.ErrorUserTooManyRequests("更新操作过于频繁，请稍后再试")
+	// return nil, error_reason.ErrorUserTooManyRequests("更新操作过于频繁，请稍后再试")
 
 	// 正常情况
 	return &v1.UpdateCurrentUserResponse{
@@ -65,13 +65,13 @@ func (h *AuthServiceErrorHandler) Login(ctx context.Context, req interface{}) (i
 	// 模拟不同类型的错误情况
 
 	// 1. 用户名或密码错误
-	// return nil, v1.ErrorAuthInvalidCredentials("用户名或密码错误")
+	// return nil, error_reason.ErrorAuthInvalidCredentials("用户名或密码错误")
 
 	// 2. 登录尝试次数过多
-	// return nil, v1.ErrorAuthLoginBlocked("登录尝试次数过多，请稍后再试")
+	// return nil, error_reason.ErrorAuthLoginBlocked("登录尝试次数过多，请稍后再试")
 
 	// 3. 请求过于频繁
-	// return nil, v1.ErrorAuthTooManyRequests("登录请求过于频繁")
+	// return nil, error_reason.ErrorAuthTooManyRequests("登录请求过于频繁")
 
 	// 正常情况
 	return map[string]interface{}{
@@ -85,10 +85,10 @@ func (h *AuthServiceErrorHandler) Register(ctx context.Context, req interface{})
 	// 模拟不同类型的错误情况
 
 	// 1. 邮箱格式不正确
-	// return nil, v1.ErrorAuthInvalidEmail("邮箱格式不正确")
+	// return nil, error_reason.ErrorAuthInvalidEmail("邮箱格式不正确")
 
 	// 2. 邮箱已被注册
-	// return nil, v1.ErrorAuthEmailExists("该邮箱已被注册")
+	// return nil, error_reason.ErrorAuthEmailExists("该邮箱已被注册")
 
 	// 正常情况
 	return map[string]interface{}{
@@ -108,7 +108,7 @@ func HTTPErrorHandler(next http.Handler) http.Handler {
 				errorResponse := NewStandardErrorResponse(error2.ErrorUserInternalError("服务内部错误"))
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(errorResponse.Code)
-				w.Write([]byte("{\"error\":\"服务内部错误\"}"))
+				w.Write([]byte("{\"error_reason\":\"服务内部错误\"}"))
 			}
 		}()
 

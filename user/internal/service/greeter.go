@@ -49,11 +49,11 @@ func (s *GreeterService) SayHello(ctx context.Context, in *v1.HelloRequest) (*v1
 	g, err := s.uc.CreateGreeter(ctx, &biz.Greeter{Hello: in.Name})
 	if err != nil {
 		// 记录错误事件
-		tracing.AddSpanEvent(ctx, "business.error", map[string]interface{}{
-			"error":     err.Error(),
-			"operation": "create_greeter",
+		tracing.AddSpanEvent(ctx, "business.error_reason", map[string]interface{}{
+			"error_reason": err.Error(),
+			"operation":    "create_greeter",
 		})
-		span.SetAttributes(attribute.String("error", err.Error()))
+		span.SetAttributes(attribute.String("error_reason", err.Error()))
 		return nil, err
 	}
 

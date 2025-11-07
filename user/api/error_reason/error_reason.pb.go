@@ -4,7 +4,7 @@
 // 	protoc        v5.29.3
 // source: user/v1/error_reason.proto
 
-package error
+package error_reason
 
 import (
 	_ "github.com/go-kratos/kratos/v2/errors"

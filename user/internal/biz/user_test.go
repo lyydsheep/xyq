@@ -120,11 +120,11 @@ func TestUserUsecase_SendRegisterCode(t *testing.T) {
 	defer cleanupTestEnv()
 
 	tests := []struct {
-		name         string
-		email        string
-		setupMocks   func(*MockUserRepository, *MockCodeRepository)
-		wantErr      bool
-		expectedErr  error
+		name        string
+		email       string
+		setupMocks  func(*MockUserRepository, *MockCodeRepository)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
 			name:  "成功发送验证码",
@@ -181,26 +181,26 @@ func TestUserUsecase_SendRegisterCode(t *testing.T) {
 		},
 		{
 			name:  "数据库错误",
-			email: "db-error@example.com",
+			email: "db-error_reason@example.com",
 			setupMocks: func(userRepo *MockUserRepository, codeRepo *MockCodeRepository) {
-				userRepo.On("GetByEmail", mock.Anything, "db-error@example.com").
-					Return((*User)(nil), errors.New("database error"))
+				userRepo.On("GetByEmail", mock.Anything, "db-error_reason@example.com").
+					Return((*User)(nil), errors.New("database error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: errors.New("database error"),
+			expectedErr: errors.New("database error_reason"),
 		},
 		{
 			name:  "频率限制错误",
-			email: "rate-limit-error@example.com",
+			email: "rate-limit-error_reason@example.com",
 			setupMocks: func(userRepo *MockUserRepository, codeRepo *MockCodeRepository) {
-				userRepo.On("GetByEmail", mock.Anything, "rate-limit-error@example.com").
+				userRepo.On("GetByEmail", mock.Anything, "rate-limit-error_reason@example.com").
 					Return((*User)(nil), gorm.ErrRecordNotFound)
 
-				codeRepo.On("CheckAndSetSendRateLimit", mock.Anything, "rate-limit-error@example.com", 60*time.Second).
-					Return(false, errors.New("redis error"))
+				codeRepo.On("CheckAndSetSendRateLimit", mock.Anything, "rate-limit-error_reason@example.com", 60*time.Second).
+					Return(false, errors.New("redis error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: errors.New("redis error"),
+			expectedErr: errors.New("redis error_reason"),
 		},
 	}
 
@@ -217,7 +217,7 @@ func TestUserUsecase_SendRegisterCode(t *testing.T) {
 			}
 
 			// 创建 usecase
-			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger(), &MockSnowflakeGenerator{mock.Mock}{})
 
 			// 执行测试
 			err := uc.SendRegisterCode(context.Background(), tt.email)
@@ -251,14 +251,14 @@ func TestUserUsecase_Register(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		email        string
-		password     string
-		code         string
-		nickname     string
-		setupMocks   func(*MockUserRepository, *MockCodeRepository, *MockAuthRepository)
-		wantErr      bool
-		expectedErr  error
+		name        string
+		email       string
+		password    string
+		code        string
+		nickname    string
+		setupMocks  func(*MockUserRepository, *MockCodeRepository, *MockAuthRepository)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
 			name:     "成功注册",
@@ -371,7 +371,7 @@ func TestUserUsecase_Register(t *testing.T) {
 			}
 
 			// 创建 usecase
-			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger(), &MockSnowflakeGenerator{mock.Mock}{})
 
 			// 执行测试
 			user, err := uc.Register(context.Background(), tt.email, tt.password, tt.code, tt.nickname)
@@ -416,12 +416,12 @@ func TestUserUsecase_Login(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		email        string
-		password     string
-		setupMocks   func(*MockUserRepository, *MockAuthRepository)
-		wantErr      bool
-		expectedErr  error
+		name        string
+		email       string
+		password    string
+		setupMocks  func(*MockUserRepository, *MockAuthRepository)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
 			name:     "成功登录",
@@ -472,10 +472,10 @@ func TestUserUsecase_Login(t *testing.T) {
 			password: validPassword,
 			setupMocks: func(userRepo *MockUserRepository, authRepo *MockAuthRepository) {
 				userRepo.On("GetByEmail", mock.Anything, "test@example.com").
-					Return((*User)(nil), errors.New("database error"))
+					Return((*User)(nil), errors.New("database error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: errors.New("database error"),
+			expectedErr: errors.New("database error_reason"),
 		},
 		{
 			name:     "StoreRefreshToken失败",
@@ -486,10 +486,10 @@ func TestUserUsecase_Login(t *testing.T) {
 					Return(validUser, nil)
 
 				authRepo.On("StoreRefreshToken", mock.Anything, int64(1), mock.Anything, mock.Anything).
-					Return(errors.New("redis error"))
+					Return(errors.New("redis error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: errors.New("redis error"),
+			expectedErr: errors.New("redis error_reason"),
 		},
 	}
 
@@ -506,7 +506,7 @@ func TestUserUsecase_Login(t *testing.T) {
 			}
 
 			// 创建 usecase
-			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger(), &MockSnowflakeGenerator{mock.Mock}{})
 
 			// 执行测试
 			tokenPair, err := uc.Login(context.Background(), tt.email, tt.password)
@@ -598,9 +598,9 @@ func TestUserUsecase_sendVerificationEmail(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:     "成功发送邮件",
-			email:    "test@example.com",
-			code:     "123456",
+			name:  "成功发送邮件",
+			email: "test@example.com",
+			code:  "123456",
 			setupMock: func(authRepo *MockAuthRepository) {
 				// 模拟发送成功（不实际发送邮件）
 			},
@@ -637,7 +637,7 @@ func TestUserUsecase_sendVerificationEmail(t *testing.T) {
 			}
 
 			// 创建 usecase
-			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger(), &MockSnowflakeGenerator{mock.Mock}{})
 
 			// 执行测试（这里不会实际发送邮件，因为使用的是 test API key）
 			// 在实际测试中，你可能想要 Mock SendGrid 的 HTTP 请求
@@ -661,13 +661,13 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 	defer cleanupTestEnv()
 
 	tests := []struct {
-		name         string
-		userID       int64
-		nickname     *string
-		avatarURL    *string
-		setupMocks   func(*MockUserRepository)
-		wantErr      bool
-		expectedErr  error
+		name        string
+		userID      int64
+		nickname    *string
+		avatarURL   *string
+		setupMocks  func(*MockUserRepository)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
 			name:      "成功更新昵称",
@@ -710,7 +710,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 			}
 
 			// 创建 usecase
-			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+			uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger(), &MockSnowflakeGenerator{mock.Mock}{})
 
 			// 创建更新请求
 			req := &UpdateUserRequest{
@@ -777,7 +777,7 @@ func TestUserUsecase_Register_Concurrent(t *testing.T) {
 			}).
 			Return(nil).Once()
 
-		uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger())
+		uc := NewUserUsecase(userRepo, codeRepo, authRepo, getTestLogger(), &MockSnowflakeGenerator{mock.Mock}{})
 
 		// 启动并发请求
 		errChan := make(chan error, numGoroutines)
@@ -801,7 +801,7 @@ func TestUserUsecase_Register_Concurrent(t *testing.T) {
 				duplicateCount++
 			} else {
 				otherErrors++
-				t.Logf("Unexpected error: %v", err)
+				t.Logf("Unexpected error_reason: %v", err)
 			}
 		}
 
@@ -830,7 +830,7 @@ func TestIsUniqueConstraintError(t *testing.T) {
 		},
 		{
 			name:     "普通错误",
-			err:      errors.New("some other error"),
+			err:      errors.New("some other error_reason"),
 			expected: false,
 		},
 		{

@@ -61,7 +61,7 @@ func (uc *GreeterUsecase) CreateGreeter(ctx context.Context, g *Greeter) (*Greet
 	// 添加业务事件
 	tracing.AddSpanEvent(ctx, "business.logic.start", map[string]interface{}{
 		"method": "CreateGreeter",
-		"input": g.Hello,
+		"input":  g.Hello,
 	})
 
 	// 模拟业务逻辑处理时间
@@ -70,17 +70,17 @@ func (uc *GreeterUsecase) CreateGreeter(ctx context.Context, g *Greeter) (*Greet
 	// 调用数据访问层
 	result, err := uc.repo.Save(ctx, g)
 	if err != nil {
-		tracing.AddSpanEvent(ctx, "business.logic.error", map[string]interface{}{
-			"error": err.Error(),
-			"method": "repo.Save",
+		tracing.AddSpanEvent(ctx, "business.logic.error_reason", map[string]interface{}{
+			"error_reason": err.Error(),
+			"method":       "repo.Save",
 		})
-		span.SetAttributes(attribute.String("error", err.Error()))
+		span.SetAttributes(attribute.String("error_reason", err.Error()))
 		return nil, err
 	}
 
 	// 记录成功事件
 	tracing.AddSpanEvent(ctx, "business.logic.success", map[string]interface{}{
-		"result": result.Hello,
+		"result":             result.Hello,
 		"processing_time_ms": 30,
 	})
 

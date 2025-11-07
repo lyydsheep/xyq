@@ -44,10 +44,10 @@ func TestDataRepository_StoreVerificationCode(t *testing.T) {
 			code:  "123456",
 			setupMock: func(mock redismock.ClientMock) {
 				key := "verification_code:test@example.com"
-				mock.ExpectSet(key, "123456", time.Duration(0)).SetErr(fmt.Errorf("redis connection error"))
+				mock.ExpectSet(key, "123456", time.Duration(0)).SetErr(fmt.Errorf("redis connection error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: "redis connection error",
+			expectedErr: "redis connection error_reason",
 		},
 		{
 			name:  "存储验证码 - 空邮箱",
@@ -151,11 +151,11 @@ func TestDataRepository_GetVerificationCode(t *testing.T) {
 			email: "test@example.com",
 			setupMock: func(mock redismock.ClientMock) {
 				key := "verification_code:test@example.com"
-				mock.ExpectGet(key).SetErr(fmt.Errorf("connection error"))
+				mock.ExpectGet(key).SetErr(fmt.Errorf("connection error_reason"))
 			},
 			wantCode:    nil,
 			wantErr:     true,
-			expectedErr: "connection error",
+			expectedErr: "connection error_reason",
 		},
 		{
 			name:  "TTL获取错误",
@@ -163,11 +163,11 @@ func TestDataRepository_GetVerificationCode(t *testing.T) {
 			setupMock: func(mock redismock.ClientMock) {
 				key := "verification_code:test@example.com"
 				mock.ExpectGet(key).SetVal("123456")
-				mock.ExpectTTL(key).SetErr(fmt.Errorf("ttl error"))
+				mock.ExpectTTL(key).SetErr(fmt.Errorf("ttl error_reason"))
 			},
 			wantCode:    nil,
 			wantErr:     true,
-			expectedErr: "ttl error",
+			expectedErr: "ttl error_reason",
 		},
 		{
 			name:  "空邮箱验证码",
@@ -274,10 +274,10 @@ func TestDataRepository_DeleteVerificationCode(t *testing.T) {
 			email: "test@example.com",
 			setupMock: func(mock redismock.ClientMock) {
 				key := "verification_code:test@example.com"
-				mock.ExpectDel(key).SetErr(fmt.Errorf("connection error"))
+				mock.ExpectDel(key).SetErr(fmt.Errorf("connection error_reason"))
 			},
 			wantErr:     true,
-			expectedErr: "connection error",
+			expectedErr: "connection error_reason",
 		},
 		{
 			name:  "删除空邮箱验证码",

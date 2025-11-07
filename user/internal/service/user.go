@@ -11,6 +11,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"user/internal/pkg/tracing"
+	error_reason "user/api/error_reason"
 )
 
 // ExtractUserID 从 HTTP 请求上下文中提取用户ID（由Nginx JWT校验后设置）
@@ -26,21 +27,21 @@ func ExtractUserID(ctx context.Context, logger *log.Helper) (int64, error) {
 	req, ok := http.RequestFromServerContext(ctx)
 	if !ok {
 		logger.WithContext(ctx).Warn("Failed to get request from context")
-		return 0, biz.ErrInvalidToken
+		return 0, error_reason.ErrorUserInvalidToken("用户认证信息无效")
 	}
 
 	// 从 X-User-ID 头获取用户ID（由Nginx设置）
 	userIDStr := req.Header.Get("X-User-ID")
 	if userIDStr == "" {
 		logger.WithContext(ctx).Warn("No X-User-ID header provided")
-		return 0, biz.ErrInvalidToken
+		return 0, error_reason.ErrorUserInvalidToken("用户认证信息缺失")
 	}
 
 	// 解析用户ID
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		logger.WithContext(ctx).Warnf("Invalid X-User-ID format: %s", userIDStr)
-		return 0, biz.ErrInvalidToken
+		return 0, error_reason.ErrorUserInvalidToken("用户ID格式无效")
 	}
 
 	logger.WithContext(ctx).Infof("User extracted from header, userID: %d", userID)
@@ -77,13 +78,13 @@ func (s *UserService) GetCurrentUser(ctx context.Context, req *v1.GetCurrentUser
 	userID, err := ExtractUserID(ctx, s.logger)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("GetCurrentUser authentication failed: %v", err)
-		return &v1.GetCurrentUserResponse{}, nil
+		return nil, err
 	}
 
 	user, err := s.userUsecase.GetUserByID(ctx, userID)
 	if err != nil {
 		s.logger.WithContext(ctx).Errorf("GetCurrentUser failed: %v", err)
-		return &v1.GetCurrentUserResponse{}, nil
+		return nil, err
 	}
 
 	s.logger.WithContext(ctx).Infof("Successfully retrieved current user with id: %d", user.ID)
