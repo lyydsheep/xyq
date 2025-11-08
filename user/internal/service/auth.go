@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"regexp"
 
 	v1 "user/api/auth/v1"
 	"user/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"user/internal/pkg/tracing"
+	error_reason "user/api/error_reason"
 )
 
 // AuthService 实现 AuthService 接口
@@ -17,6 +19,34 @@ type AuthService struct {
 	authUsecase *biz.AuthUsecase
 	userUsecase *biz.UserUsecase
 	logger      *log.Helper
+}
+
+// emailRegex 邮箱格式正则表达式
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+
+// validateEmail 验证邮箱格式
+//
+// 参数:
+//   - email: 待验证的邮箱地址
+//
+// 返回值:
+//   - error: 验证失败时返回错误，验证成功时返回 nil
+func validateEmail(email string) error {
+	if email == "" {
+		return error_reason.ErrorUserInvalidEmail("邮箱不能为空")
+	}
+
+	// 检查邮箱长度（最大254字符是RFC 5321规定的）
+	if len(email) > 254 {
+		return error_reason.ErrorUserInvalidEmail("邮箱长度不能超过254个字符")
+	}
+
+	// 检查邮箱格式
+	if !emailRegex.MatchString(email) {
+		return error_reason.ErrorUserInvalidEmail("邮箱格式不正确")
+	}
+
+	return nil
 }
 
 // NewAuthService 创建 AuthService 实例
@@ -39,6 +69,12 @@ func (s *AuthService) SendRegisterCode(ctx context.Context, req *v1.SendRegister
 	})
 
 	s.logger.WithContext(ctx).Infof("Received SendRegisterCode request for email: %s", req.Email)
+
+	// 验证邮箱格式
+	if err := validateEmail(req.Email); err != nil {
+		s.logger.WithContext(ctx).Warnf("Invalid email format: %s, error: %v", req.Email, err)
+		return nil, err
+	}
 
 	err := s.userUsecase.SendRegisterCode(ctx, req.Email)
 	if err != nil {
