@@ -5,6 +5,7 @@ import (
 	v1 "user/api/helloworld/v1"
 	userv1 "user/api/user/v1"
 	"user/internal/conf"
+	tracingpkg "user/internal/pkg/tracing"
 	"user/internal/service"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -19,6 +20,7 @@ func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, authService 
 		http.Middleware(
 			recovery.Recovery(),
 			tracing.Server(),
+			tracingpkg.HTTPErrorResponseEnhancer(), // 添加错误响应增强中间件
 		),
 	}
 	if c.Http.Network != "" {
