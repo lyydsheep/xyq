@@ -49,6 +49,55 @@ func validateEmail(email string) error {
 	return nil
 }
 
+// validatePassword 验证密码格式
+//
+// 参数:
+//   - password: 待验证的密码
+//
+// 返回值:
+//   - error: 验证失败时返回错误，验证成功时返回 nil
+func validatePassword(password string) error {
+	if password == "" {
+		return error_reason.ErrorUserInvalidRequest("密码不能为空")
+	}
+
+	// 检查密码长度（8-16位）
+	if len(password) < 8 {
+		return error_reason.ErrorUserInvalidRequest("密码长度至少8位")
+	}
+	if len(password) > 16 {
+		return error_reason.ErrorUserInvalidRequest("密码长度不能超过16位")
+	}
+
+	// 检查是否包含至少一个数字
+	hasNumber := false
+	// 检查是否包含至少一个字母
+	hasLetter := false
+
+	for _, char := range password {
+		switch {
+		case char >= '0' && char <= '9':
+			hasNumber = true
+		case char >= 'a' && char <= 'z', char >= 'A' && char <= 'Z':
+			hasLetter = true
+		}
+		// 如果两个条件都满足，可以提前结束检查
+		if hasNumber && hasLetter {
+			break
+		}
+	}
+
+	if !hasNumber {
+		return error_reason.ErrorUserInvalidRequest("密码必须包含至少一个数字")
+	}
+
+	if !hasLetter {
+		return error_reason.ErrorUserInvalidRequest("密码必须包含至少一个字母")
+	}
+
+	return nil
+}
+
 // NewAuthService 创建 AuthService 实例
 func NewAuthService(authUsecase *biz.AuthUsecase, userUsecase *biz.UserUsecase, logger log.Logger) *AuthService {
 	return &AuthService{
@@ -101,6 +150,12 @@ func (s *AuthService) Register(ctx context.Context, req *v1.RegisterRequest) (*v
 	})
 
 	s.logger.WithContext(ctx).Infof("Received Register request for email: %s", req.Email)
+
+	// 验证密码格式
+	if err := validatePassword(req.Password); err != nil {
+		s.logger.WithContext(ctx).Warnf("Invalid password format: %s, error: %v", req.Password, err)
+		return nil, err
+	}
 
 	user, err := s.userUsecase.Register(ctx, req.Email, req.Password, req.Code, req.Nickname)
 	if err != nil {

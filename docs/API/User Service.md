@@ -69,15 +69,21 @@
 ---
 
 ### AuthService_Register
-● **POST**  
-● `/v1/auth/register`  
+● **POST**
+● `/v1/auth/register`
 ● **功能描述:** 用户注册，需要提供正确的邮箱验证码
+
+● **密码强度要求:**
+  - 长度：8-16位字符
+  - 必须包含至少一个数字（0-9）
+  - 必须包含至少一个字母（a-z或A-Z）
+  - 允许包含字母、数字和常见特殊字符
 
 ● **请求 Body:**
 ```json
 {
     "email": "string",
-    "password": "string", 
+    "password": "string",
     "code": "string",
     "nickname": "string"
 }
@@ -102,12 +108,42 @@
 }
 ```
 
-● **密码过短（HTTP 状态码 400）**
+● **密码格式错误（HTTP 状态码 400）**
 ```json
 {
     "code": 400,
-    "reason": "USER_INVALID_REQUEST", 
-    "message": "密码长度至少为6位",
+    "reason": "USER_INVALID_REQUEST",
+    "message": "密码长度至少8位",
+    "metadata": {}
+}
+```
+
+● **密码过长（HTTP 状态码 400）**
+```json
+{
+    "code": 400,
+    "reason": "USER_INVALID_REQUEST",
+    "message": "密码长度不能超过16位",
+    "metadata": {}
+}
+```
+
+● **密码缺少数字（HTTP 状态码 400）**
+```json
+{
+    "code": 400,
+    "reason": "USER_INVALID_REQUEST",
+    "message": "密码必须包含至少一个数字",
+    "metadata": {}
+}
+```
+
+● **密码缺少字母（HTTP 状态码 400）**
+```json
+{
+    "code": 400,
+    "reason": "USER_INVALID_REQUEST",
+    "message": "密码必须包含至少一个字母",
     "metadata": {}
 }
 ```
@@ -449,7 +485,7 @@ X-User-ID: 12345
 
 1. **验证码机制**: 生成的验证码为6位数字，有效期10分钟
 2. **频率限制**: 发送验证码接口有60秒频率限制
-3. **密码要求**: 密码长度至少6位
+3. **密码强度要求**: 密码长度8-16位，必须包含至少一个数字和至少一个字母
 4. **Token有效期**: Access Token 1小时，Refresh Token 7天
 5. **认证方式**: UserService使用X-User-ID Header而非JWT Token
 6. **原子性操作**: Token刷新使用事务确保原子性
