@@ -109,16 +109,29 @@ type UserUsecase struct {
 	authRepo AuthRepository
 	idGen    SnowflakeIDGenerator
 	log      *log.Helper
+
+	// 邮件配置
+	emailConfig EmailConfig
+}
+
+// EmailConfig 邮件配置
+type EmailConfig struct {
+	SenderName   string
+	SenderEmail  string
+	SupportEmail string
+	CompanyName  string
+	AppName      string
 }
 
 // NewUserUsecase new a User usecase.
-func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, authRepo AuthRepository, idGen SnowflakeIDGenerator, logger log.Logger) *UserUsecase {
+func NewUserUsecase(userRepo UserRepository, codeRepo CodeRepository, authRepo AuthRepository, idGen SnowflakeIDGenerator, emailConfig EmailConfig, logger log.Logger) *UserUsecase {
 	return &UserUsecase{
-		userRepo: userRepo,
-		codeRepo: codeRepo,
-		authRepo: authRepo,
-		idGen:    idGen,
-		log:      log.NewHelper(logger),
+		userRepo:    userRepo,
+		codeRepo:    codeRepo,
+		authRepo:    authRepo,
+		idGen:       idGen,
+		log:         log.NewHelper(logger),
+		emailConfig: emailConfig,
 	}
 }
 
@@ -408,8 +421,8 @@ func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code st
 		return nil
 	}
 
-	// 2. 定义发件人邮箱（需要是在 SendGrid 中验证过的域名下的邮箱）
-	fromEmail := mail.NewEmail("用户系统", "noreply@lyydsheep.xyz")
+	// 2. 使用配置中的发件人信息
+	fromEmail := mail.NewEmail(uc.emailConfig.SenderName, uc.emailConfig.SenderEmail)
 
 	// 3. 提取邮箱的用户名部分作为收件人称呼
 	emailPrefix := strings.Split(email, "@")[0]
@@ -436,7 +449,7 @@ func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code st
 感谢您的使用！
 `, code)
 
-	// 7. 构建HTML内容
+	// 7. 构建HTML内容（使用配置中的公司信息）
 	htmlContent := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -493,13 +506,13 @@ func (uc *UserUsecase) sendVerificationEmail(ctx context.Context, email, code st
 
         <div class="footer">
             <p>此邮件由系统自动发送，请勿直接回复。</p>
-            <p>如有问题请联系 <a href="mailto:support@lyydsheep.xyz">support@lyydsheep.xyz</a></p>
-            <p style="margin-top: 15px; color: #999;">© 2025 您的应用名称. 保留所有权利。</p>
+            <p>如有问题请联系 <a href="mailto:%s">%s</a></p>
+            <p style="margin-top: 15px; color: #999;">© 2025 %s. 保留所有权利。</p>
         </div>
     </div>
 </body>
 </html>
-`, code)
+`, code, uc.emailConfig.SupportEmail, uc.emailConfig.SupportEmail, uc.emailConfig.CompanyName)
 
 	// 8. 构造完整的邮件对象
 	message := mail.NewSingleEmail(

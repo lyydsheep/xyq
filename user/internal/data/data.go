@@ -19,10 +19,7 @@ var ProviderSet = wire.NewSet(
 	NewData,
 	NewDB,
 	NewRedis,
-	NewGreeterRepo,
 	NewUserRepository,
-	NewUserPointRepository,
-	NewPointTransactionRepository,
 	NewCodeRepository,
 	NewAuthRepository,
 )
