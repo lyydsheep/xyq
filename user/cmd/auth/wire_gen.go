@@ -24,14 +24,11 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, confData *conf.Data, email *conf.Email, logger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	greeterRepo := data.NewGreeterRepo(dataData, logger)
-	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
-	greeterService := service.NewGreeterService(greeterUsecase)
 	authRepository := data.NewAuthRepository(dataData, logger)
 	authUsecase := biz.NewAuthUsecase(authRepository, logger)
 	db := data.NewDB(dataData)
@@ -43,11 +40,12 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 		cleanup()
 		return nil, nil, err
 	}
-	userUsecase := biz.NewUserUsecase(userRepository, codeRepository, authRepository, snowflakeGenerator, logger)
+	emailConfig := biz.NewEmailConfig(email)
+	userUsecase := biz.NewUserUsecase(userRepository, codeRepository, authRepository, snowflakeGenerator, emailConfig, logger)
 	authService := service.NewAuthService(authUsecase, userUsecase, logger)
 	userService := service.NewUserService(userUsecase, logger)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, authService, userService, logger)
-	httpServer := server.NewHTTPServer(confServer, greeterService, authService, userService, logger)
+	grpcServer := server.NewGRPCServer(confServer, authService, userService, logger)
+	httpServer := server.NewHTTPServer(confServer, authService, userService, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()
